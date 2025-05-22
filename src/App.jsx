@@ -17,9 +17,9 @@ const App = () => {
   const fetchUserRole = useCallback(async (idToken) => {
     try {
       const startTime = performance.now();
-      const response = await axios.get('http://127.0.0.1:8001/api/auth/me', {
+      const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/me', {
         headers: { Authorization: `Bearer ${idToken}` },
-        timeout: 5000, // Tiempo de espera de 5 segundos
+        timeout: 5000,
       });
       const userRole = response.data.role;
       console.log('Rol obtenido:', userRole);
@@ -50,7 +50,7 @@ const App = () => {
             const startTime = performance.now();
             const idToken = await Promise.race([
               user.getIdToken(true),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000)), // Tiempo de espera de 5 segundos
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000)),
             ]);
             console.log(`Tiempo para obtener el token de Firebase: ${(performance.now() - startTime) / 1000} segundos`);
             sessionStorage.setItem('token', idToken);

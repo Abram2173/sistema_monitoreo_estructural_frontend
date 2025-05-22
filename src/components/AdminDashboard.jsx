@@ -20,7 +20,7 @@ const AdminDashboard = ({ token, onLogout, role }) => {
       return;
     }
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/reports', {
+      const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/reports', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setReports(response.data);
@@ -35,7 +35,7 @@ const AdminDashboard = ({ token, onLogout, role }) => {
       return;
     }
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/admin/supervisors', {
+      const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/admin/supervisors', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSupervisors(response.data);
@@ -60,7 +60,7 @@ const AdminDashboard = ({ token, onLogout, role }) => {
     }
     try {
       const response = await axios.post(
-        'http://127.0.0.1:8000/api/admin/assign-report',
+        'https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/admin/assign-report',
         { report_id: reportId, supervisor_username: selectedSupervisor },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -130,7 +130,7 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                     Visualizar Reportes
                   </h2>
                   <button
-                    onClick={() => fetchReports(true)} // Forzar recarga
+                    onClick={() => fetchReports(true)}
                     className="flex items-center bg-azul-secondary text-blanco px-4 py-2 rounded hover:bg-azul-secondary/80 transition"
                   >
                     <FaSyncAlt className="mr-2" />
@@ -222,7 +222,7 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                     Asignar Reportes a Supervisores
                   </h2>
                   <button
-                    onClick={() => fetchReports(true)} // Forzar recarga
+                    onClick={() => fetchReports(true)}
                     className="flex items-center bg-azul-secondary text-blanco px-4 py-2 rounded hover:bg-azul-secondary/80 transition"
                   >
                     <FaSyncAlt className="mr-2" />

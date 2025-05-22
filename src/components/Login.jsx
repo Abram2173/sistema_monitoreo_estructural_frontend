@@ -13,11 +13,11 @@ const Login = ({ setToken }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const startTime = performance.now(); // Inicio del temporizador
+      const startTime = performance.now();
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const token = await userCredential.user.getIdToken();
-      const endTime = performance.now(); // Fin del temporizador
-      console.log(`Tiempo de autenticación con Firebase: ${(endTime - startTime) / 1000} segundos`); // Depuración
+      const endTime = performance.now();
+      console.log(`Tiempo de autenticación con Firebase: ${(endTime - startTime) / 1000} segundos`);
       sessionStorage.setItem('token', token);
       setToken(token);
       navigate('/dashboard');
