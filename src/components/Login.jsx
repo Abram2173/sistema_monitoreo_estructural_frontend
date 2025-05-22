@@ -12,18 +12,21 @@ const Login = ({ setToken }) => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError(''); // Limpiar errores anteriores
     try {
       const startTime = performance.now();
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const token = await userCredential.user.getIdToken();
       const endTime = performance.now();
       console.log(`Tiempo de autenticación con Firebase: ${(endTime - startTime) / 1000} segundos`);
+      console.log('Token obtenido de Firebase:', token); // Depuración
       sessionStorage.setItem('token', token);
+      console.log('Token guardado en sessionStorage:', sessionStorage.getItem('token')); // Depuración
       setToken(token);
       navigate('/dashboard');
     } catch (error) {
-      console.error("Error al iniciar sesión:", error);
-      setError("Credenciales inválidas");
+      console.error("Error al iniciar sesión:", error.message); // Mostrar mensaje específico del error
+      setError(error.message || "Credenciales inválidas");
     }
   };
 

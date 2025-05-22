@@ -19,18 +19,23 @@ const App = () => {
       const startTime = performance.now();
       const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/me', {
         headers: { Authorization: `Bearer ${idToken}` },
-        timeout: 5000,
+        timeout: 10000, // Aumentar a 10 segundos
       });
       const userRole = response.data.role;
       console.log('Rol obtenido:', userRole);
       console.log(`Tiempo para obtener el rol: ${(performance.now() - startTime) / 1000} segundos`);
       setRole(userRole);
       sessionStorage.setItem('role', userRole);
+      console.log('Role guardado en sessionStorage:', sessionStorage.getItem('role')); // Depuración
       setLoading(false);
       navigate('/dashboard');
     } catch (err) {
-      console.error("Error al obtener el rol del usuario:", err.response?.data || err);
+      console.error("Error al obtener el rol del usuario:", err.response?.data || err.message);
       setLoading(false);
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('role');
+      setToken('');
+      setRole('');
       navigate('/login');
     }
   }, [navigate]);
@@ -40,6 +45,9 @@ const App = () => {
       if (user) {
         const storedToken = sessionStorage.getItem('token');
         const storedRole = sessionStorage.getItem('role');
+        console.log('Usuario autenticado en Firebase:', user.email); // Depuración
+        console.log('Token almacenado:', storedToken); // Depuración
+        console.log('Rol almacenado:', storedRole); // Depuración
         if (storedToken && storedRole) {
           setToken(storedToken);
           setRole(storedRole);
@@ -50,14 +58,15 @@ const App = () => {
             const startTime = performance.now();
             const idToken = await Promise.race([
               user.getIdToken(true),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000)),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000)),
             ]);
             console.log(`Tiempo para obtener el token de Firebase: ${(performance.now() - startTime) / 1000} segundos`);
             sessionStorage.setItem('token', idToken);
+            console.log('Token guardado en sessionStorage:', sessionStorage.getItem('token')); // Depuración
             setToken(idToken);
             fetchUserRole(idToken);
           } catch (error) {
-            console.error("Error al obtener el token de Firebase:", error);
+            console.error("Error al obtener el token de Firebase:", error.message);
             sessionStorage.removeItem('token');
             sessionStorage.removeItem('role');
             setToken('');
