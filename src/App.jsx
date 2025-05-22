@@ -64,7 +64,7 @@ const App = () => {
             sessionStorage.setItem('token', idToken);
             console.log('Token guardado en sessionStorage:', sessionStorage.getItem('token')); // Depuración
             setToken(idToken);
-            fetchUserRole(idToken);
+            await fetchUserRole(idToken);
           } catch (error) {
             console.error("Error al obtener el token de Firebase:", error.message);
             sessionStorage.removeItem('token');
