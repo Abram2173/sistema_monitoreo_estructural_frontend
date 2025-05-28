@@ -12,6 +12,7 @@ const App = () => {
     const [token, setToken] = useState(sessionStorage.getItem('token') || '');
     const [role, setRole] = useState(sessionStorage.getItem('role') || '');
     const [loading, setLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false); // Nuevo estado para controlar autenticación
     const navigate = useNavigate();
 
     const fetchUserRole = useCallback(async (idToken) => {
@@ -28,72 +29,60 @@ const App = () => {
             setRole(userRole);
             sessionStorage.setItem('role', userRole);
             console.log('Role guardado en sessionStorage:', sessionStorage.getItem('role'));
-            setLoading(false);
-            navigate('/dashboard');
+            setIsAuthenticated(true); // Marcar como autenticado
         } catch (err) {
             console.error("Error al obtener el rol del usuario:", err.response?.data || err.message);
-            setLoading(false);
-            sessionStorage.removeItem('token');
-            sessionStorage.removeItem('role');
             setToken('');
             setRole('');
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('role');
+            setIsAuthenticated(false);
             navigate('/login');
+        } finally {
+            setLoading(false);
         }
     }, [navigate]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const storedToken = sessionStorage.getItem('token');
-                const storedRole = sessionStorage.getItem('role');
                 console.log('Usuario autenticado en Firebase:', user.email);
-                console.log('Token almacenado:', storedToken);
-                console.log('Rol almacenado:', storedRole);
-                if (storedToken && storedRole) {
-                    console.log('Usando token y rol almacenados en sessionStorage');
-                    setToken(storedToken);
-                    setRole(storedRole);
+                try {
+                    const idToken = await Promise.race([
+                        user.getIdToken(true), // Forzar la actualización del token
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000)),
+                    ]);
+                    console.log('Token obtenido:', idToken);
+                    sessionStorage.setItem('token', idToken);
+                    setToken(idToken);
+                    await fetchUserRole(idToken);
+                } catch (error) {
+                    console.error("Error al obtener el token de Firebase:", error.message);
+                    setToken('');
+                    setRole('');
+                    sessionStorage.removeItem('token');
+                    sessionStorage.removeItem('role');
+                    setIsAuthenticated(false);
                     setLoading(false);
-                    navigate('/dashboard');
-                } else {
-                    try {
-                        const startTime = performance.now();
-                        const idToken = await Promise.race([
-                            user.getIdToken(true),
-                            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000)),
-                        ]);
-                        console.log(`Tiempo para obtener el token de Firebase: ${(performance.now() - startTime) / 1000} segundos`);
-                        sessionStorage.setItem('token', idToken);
-                        console.log('Token guardado en sessionStorage:', sessionStorage.getItem('token'));
-                        setToken(idToken);
-                        await fetchUserRole(idToken);
-                    } catch (error) {
-                        console.error("Error al obtener el token de Firebase:", error.message);
-                        sessionStorage.removeItem('token');
-                        sessionStorage.removeItem('role');
-                        setToken('');
-                        setRole('');
-                        setLoading(false);
-                        navigate('/login');
-                    }
+                    navigate('/login');
                 }
             } else {
                 console.log('No hay usuario autenticado');
-                sessionStorage.removeItem('token');
-                sessionStorage.removeItem('role');
                 setToken('');
                 setRole('');
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('role');
+                setIsAuthenticated(false);
                 setLoading(false);
                 navigate('/login');
             }
         });
 
         return () => unsubscribe();
-    }, [navigate, fetchUserRole]);
+    }, [fetchUserRole, navigate]);
 
     const handleLogout = async () => {
         try {
-            // Enviar solicitud al backend para invalidar el caché
             if (token) {
                 await axios.post('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/logout', {}, {
                     headers: { Authorization: `Bearer ${token}` }
@@ -103,10 +92,11 @@ const App = () => {
             console.error("Error al cerrar sesión en el backend:", err.response?.data || err.message);
         }
         auth.signOut();
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('role');
         setToken('');
         setRole('');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('role');
+        setIsAuthenticated(false);
         navigate('/login');
     };
 
@@ -115,7 +105,7 @@ const App = () => {
             return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
         }
 
-        if (!token) {
+        if (!isAuthenticated) {
             return <Login setToken={setToken} />;
         }
 
