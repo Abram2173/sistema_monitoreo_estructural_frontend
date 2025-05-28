@@ -6,13 +6,15 @@ import SupervisorDashboard from './components/SupervisorDashboard';
 import InspectorDashboard from './components/InspectorDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import { auth } from './firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, getIdToken } from 'firebase/auth';
 
 const App = () => {
     const [token, setToken] = useState(sessionStorage.getItem('token') || '');
     const [role, setRole] = useState(sessionStorage.getItem('role') || '');
     const [loading, setLoading] = useState(true);
-    const [isAuthenticated, setIsAuthenticated] = useState(false); // Nuevo estado para controlar autenticación
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [lastAuthStateChange, setLastAuthStateChange] = useState(0);
+    const [error, setError] = useState(''); // Nuevo estado para errores
     const navigate = useNavigate();
 
     const fetchUserRole = useCallback(async (idToken) => {
@@ -28,10 +30,11 @@ const App = () => {
             console.log(`Tiempo para obtener el rol: ${(performance.now() - startTime) / 1000} segundos`);
             setRole(userRole);
             sessionStorage.setItem('role', userRole);
-            console.log('Role guardado en sessionStorage:', sessionStorage.getItem('role'));
-            setIsAuthenticated(true); // Marcar como autenticado
+            setIsAuthenticated(true);
+            setError(''); // Limpiar cualquier error
         } catch (err) {
             console.error("Error al obtener el rol del usuario:", err.response?.data || err.message);
+            setError(err.response?.data?.detail || 'Error al autenticar. Por favor, inicia sesión nuevamente.');
             setToken('');
             setRole('');
             sessionStorage.removeItem('token');
@@ -45,19 +48,27 @@ const App = () => {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            const now = Date.now();
+            if (now - lastAuthStateChange < 1000) {
+                console.log('Ignorando cambio de estado de autenticación repetido');
+                return;
+            }
+            setLastAuthStateChange(now);
+
             if (user) {
                 console.log('Usuario autenticado en Firebase:', user.email);
                 try {
                     const idToken = await Promise.race([
-                        user.getIdToken(true), // Forzar la actualización del token
+                        getIdToken(user, true),
                         new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000)),
                     ]);
-                    console.log('Token obtenido:', idToken);
+                    console.log('Token renovado:', idToken);
                     sessionStorage.setItem('token', idToken);
                     setToken(idToken);
                     await fetchUserRole(idToken);
                 } catch (error) {
-                    console.error("Error al obtener el token de Firebase:", error.message);
+                    console.error("Error al renovar el token de Firebase:", error.message);
+                    setError('Error al renovar la sesión. Por favor, inicia sesión nuevamente.');
                     setToken('');
                     setRole('');
                     sessionStorage.removeItem('token');
@@ -79,7 +90,7 @@ const App = () => {
         });
 
         return () => unsubscribe();
-    }, [fetchUserRole, navigate]);
+    }, [fetchUserRole, lastAuthStateChange, navigate]);
 
     const handleLogout = async () => {
         try {
@@ -97,12 +108,33 @@ const App = () => {
         sessionStorage.removeItem('token');
         sessionStorage.removeItem('role');
         setIsAuthenticated(false);
+        setError('');
         navigate('/login');
     };
 
     const AppContent = () => {
         if (loading) {
             return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
+        }
+
+        if (error) {
+            return (
+                <div className="min-h-screen flex items-center justify-center">
+                    <div className="bg-blanco p-6 rounded-lg shadow-md text-center">
+                        <h2 className="text-2xl font-bold text-gris-oscuro mb-4">Error</h2>
+                        <p className="text-rojo mb-4">{error}</p>
+                        <button
+                            onClick={() => {
+                                setError('');
+                                navigate('/login');
+                            }}
+                            className="bg-azul-secundario text-blanco px-4 py-2 rounded hover:bg-azul-secundario/80 transition"
+                        >
+                            Volver a Iniciar Sesión
+                        </button>
+                    </div>
+                </div>
+            );
         }
 
         if (!isAuthenticated) {
