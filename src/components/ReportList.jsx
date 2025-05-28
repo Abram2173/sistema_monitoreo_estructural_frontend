@@ -5,6 +5,7 @@ const ReportList = ({ token }) => {
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [comment, setComment] = useState({}); // Estado para los comentarios de cada reporte
 
     const fetchReports = useCallback(async () => {
         try {
@@ -36,6 +37,40 @@ const ReportList = ({ token }) => {
 
     const handleRefresh = () => {
         fetchReports();
+    };
+
+    const handleAction = async (reportId, status) => {
+        try {
+            const commentText = comment[reportId] || '';
+            console.log(`Enviando acción para reporte ${reportId}: ${status}, Comentario: ${commentText}`);
+            const response = await axios.put(
+                `https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/reports/${reportId}`,
+                {
+                    status: status,
+                    recommendations: commentText || null
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                    timeout: 10000
+                }
+            );
+            console.log('Reporte actualizado:', response.data);
+            // Actualizar el estado local
+            setReports(reports.map(report =>
+                report.id === reportId
+                    ? { ...report, status: status, recommendations: commentText || null }
+                    : report
+            ));
+            // Limpiar el comentario después de enviar
+            setComment(prev => ({ ...prev, [reportId]: '' }));
+        } catch (err) {
+            console.error('Error al actualizar el reporte:', err.response?.data || err.message);
+            setError(err.response?.data?.detail || 'Error al actualizar el reporte');
+        }
+    };
+
+    const handleCommentChange = (reportId, value) => {
+        setComment(prev => ({ ...prev, [reportId]: value }));
     };
 
     if (loading) {
@@ -79,6 +114,8 @@ const ReportList = ({ token }) => {
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Ubicación</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Riesgo</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Estado</th>
+                                <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Comentario</th>
+                                <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -100,6 +137,39 @@ const ReportList = ({ token }) => {
                                         >
                                             {report.status}
                                         </span>
+                                    </td>
+                                    <td className="p-3 text-gris-oscuro text-sm">
+                                        {report.status === 'Pendiente' ? (
+                                            <textarea
+                                                value={comment[report.id] || ''}
+                                                onChange={(e) => handleCommentChange(report.id, e.target.value)}
+                                                placeholder="Añade un comentario (opcional)"
+                                                className="w-full p-2 border rounded"
+                                                rows="2"
+                                            />
+                                        ) : (
+                                            report.recommendations || 'Sin comentario'
+                                        )}
+                                    </td>
+                                    <td className="p-3">
+                                        {report.status === 'Pendiente' ? (
+                                            <div className="flex space-x-2">
+                                                <button
+                                                    onClick={() => handleAction(report.id, 'Aprobado')}
+                                                    className="bg-verde text-blanco px-3 py-1 rounded hover:bg-verde/80 transition"
+                                                >
+                                                    Aprobar
+                                                </button>
+                                                <button
+                                                    onClick={() => handleAction(report.id, 'Rechazado')}
+                                                    className="bg-rojo text-blanco px-3 py-1 rounded hover:bg-rojo/80 transition"
+                                                >
+                                                    Rechazar
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <span className="text-gris-oscuro">Acción completada</span>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
