@@ -22,6 +22,7 @@ const App = () => {
                 timeout: 10000,
             });
             const userRole = response.data.role;
+            console.log('Respuesta de /api/auth/me:', response.data);
             console.log('Rol obtenido:', userRole);
             console.log(`Tiempo para obtener el rol: ${(performance.now() - startTime) / 1000} segundos`);
             setRole(userRole);
@@ -49,6 +50,7 @@ const App = () => {
                 console.log('Token almacenado:', storedToken);
                 console.log('Rol almacenado:', storedRole);
                 if (storedToken && storedRole) {
+                    console.log('Usando token y rol almacenados en sessionStorage');
                     setToken(storedToken);
                     setRole(storedRole);
                     setLoading(false);
@@ -89,7 +91,17 @@ const App = () => {
         return () => unsubscribe();
     }, [navigate, fetchUserRole]);
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            // Enviar solicitud al backend para invalidar el caché
+            if (token) {
+                await axios.post('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/logout', {}, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            }
+        } catch (err) {
+            console.error("Error al cerrar sesión en el backend:", err.response?.data || err.message);
+        }
         auth.signOut();
         sessionStorage.removeItem('token');
         sessionStorage.removeItem('role');
