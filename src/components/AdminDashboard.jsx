@@ -13,10 +13,10 @@ const AdminDashboard = ({ token, onLogout, role }) => {
     const [selectedReport, setSelectedReport] = useState(null);
     const [selectedSupervisor, setSelectedSupervisor] = useState('');
     const [expandedReport, setExpandedReport] = useState(null);
+    const [isDataFetched, setIsDataFetched] = useState(false);
 
     const fetchReports = useCallback(async (forceRefresh = false) => {
         if (!forceRefresh && reports.length > 0) {
-            setLoading(false);
             return;
         }
         try {
@@ -31,9 +31,6 @@ const AdminDashboard = ({ token, onLogout, role }) => {
     }, [token, reports.length]);
 
     const fetchSupervisors = useCallback(async (forceRefresh = false) => {
-        if (!forceRefresh && supervisors.length > 0) {
-            return;
-        }
         try {
             const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/admin/supervisors', {
                 headers: { Authorization: `Bearer ${token}` },
@@ -43,15 +40,18 @@ const AdminDashboard = ({ token, onLogout, role }) => {
         } catch (err) {
             setError(err.response?.data?.detail || 'Error al cargar los supervisores');
         }
-    }, [token, supervisors.length]);
+    }, [token]);
 
     useEffect(() => {
-        if (role === 'admin') {
+        if (role === 'admin' && !isDataFetched) {
             Promise.all([fetchReports(), fetchSupervisors()])
-                .then(() => setLoading(false))
+                .then(() => {
+                    setLoading(false);
+                    setIsDataFetched(true);
+                })
                 .catch(() => setLoading(false));
         }
-    }, [role, fetchReports, fetchSupervisors]);
+    }, [role, fetchReports, fetchSupervisors, isDataFetched]);
 
     const handleAssignReport = async (reportId) => {
         if (!selectedSupervisor) {
@@ -93,6 +93,13 @@ const AdminDashboard = ({ token, onLogout, role }) => {
         } catch (err) {
             setError(err.response?.data?.detail || 'Error al eliminar el reporte');
         }
+    };
+
+    const handleRefreshSupervisors = async () => {
+        setLoading(true);
+        setError('');
+        await fetchSupervisors(true); // Forzar actualización de supervisores
+        setLoading(false);
     };
 
     const toggleReportDetails = (reportId) => {
@@ -245,13 +252,22 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                                     <h2 className="text-xl font-bold text-gris-oscuro flex items-center">
                                         Asignar Reportes a Supervisores
                                     </h2>
-                                    <button
-                                        onClick={() => fetchReports(true)}
-                                        className="flex items-center bg-azul-secondary text-blanco px-4 py-2 rounded hover:bg-azul-secondary/80 transition"
-                                    >
-                                        <FaSyncAlt className="mr-2" />
-                                        Cargar
-                                    </button>
+                                    <div className="flex space-x-2">
+                                        <button
+                                            onClick={() => fetchReports(true)}
+                                            className="flex items-center bg-azul-secondary text-blanco px-4 py-2 rounded hover:bg-azul-secondary/80 transition"
+                                        >
+                                            <FaSyncAlt className="mr-2" />
+                                            Cargar Reportes
+                                        </button>
+                                        <button
+                                            onClick={handleRefreshSupervisors}
+                                            className="flex items-center bg-azul-secondary text-blanco px-4 py-2 rounded hover:bg-azul-secondary/80 transition"
+                                        >
+                                            <FaSyncAlt className="mr-2" />
+                                            Actualizar Supervisores
+                                        </button>
+                                    </div>
                                 </div>
                                 {error && <p className="text-rojo mb-4">{error}</p>}
                                 {!error && reports.length === 0 ? (
