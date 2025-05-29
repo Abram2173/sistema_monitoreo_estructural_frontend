@@ -5,7 +5,7 @@ const ReportList = ({ token }) => {
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [comment, setComment] = useState({}); // Estado para los comentarios de cada reporte
+    const [comment, setComment] = useState({});
 
     const fetchReports = useCallback(async () => {
         try {
@@ -55,13 +55,11 @@ const ReportList = ({ token }) => {
                 }
             );
             console.log('Reporte actualizado:', response.data);
-            // Actualizar el estado local
             setReports(reports.map(report =>
                 report.id === reportId
                     ? { ...report, status: status, recommendations: commentText || null }
                     : report
             ));
-            // Limpiar el comentario después de enviar
             setComment(prev => ({ ...prev, [reportId]: '' }));
         } catch (err) {
             console.error('Error al actualizar el reporte:', err.response?.data || err.message);
@@ -114,7 +112,8 @@ const ReportList = ({ token }) => {
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Ubicación</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Riesgo</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Estado</th>
-                                <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Comentario</th>
+                                <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Comentario del Inspector</th>
+                                <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Recomendaciones del Supervisor</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Acciones</th>
                             </tr>
                         </thead>
@@ -139,6 +138,9 @@ const ReportList = ({ token }) => {
                                         </span>
                                     </td>
                                     <td className="p-3 text-gris-oscuro text-sm">
+                                        {report.comments || 'Sin comentario'}
+                                    </td>
+                                    <td className="p-3 text-gris-oscuro text-sm">
                                         {report.status === 'Pendiente' ? (
                                             <textarea
                                                 value={comment[report.id] || ''}
@@ -148,7 +150,7 @@ const ReportList = ({ token }) => {
                                                 rows="2"
                                             />
                                         ) : (
-                                            report.recommendations || 'Sin comentario'
+                                            report.recommendations || 'Sin recomendaciones'
                                         )}
                                     </td>
                                     <td className="p-3">
