@@ -73,7 +73,7 @@ const ReportList = ({ token }) => {
         setComment(prev => ({ ...prev, [reportId]: value }));
     };
 
-    const handleDownloadImage = async (imageUrl, reportId) => {
+    const handleDownloadImage = async (imageUrl, reportId, imageNumber) => {
         try {
             const response = await fetch(`${imageUrl}?download=true`);
             if (!response.ok) {
@@ -83,7 +83,7 @@ const ReportList = ({ token }) => {
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `reporte_${reportId}.jpg`);
+            link.setAttribute('download', `reporte_${reportId}_imagen${imageNumber}.jpg`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -144,7 +144,8 @@ const ReportList = ({ token }) => {
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Riesgo</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Estado</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Comentario del Inspector</th>
-                                <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Imagen</th>
+                                <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Imagen 1</th>
+                                <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Imagen 2</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Recomendaciones del Supervisor</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Acciones</th>
                             </tr>
@@ -173,24 +174,45 @@ const ReportList = ({ token }) => {
                                         {report.comments || 'Sin comentario'}
                                     </td>
                                     <td className="p-3 text-gris-oscuro text-sm">
-                                        {report.image_path ? (
+                                        {report.image_path_1 ? (
                                             <div className="flex flex-col items-center">
                                                 <img
-                                                    src={`${BASE_URL}${report.image_path}`}
-                                                    alt="Reporte"
+                                                    src={`${BASE_URL}${report.image_path_1}`}
+                                                    alt="Reporte Imagen 1"
                                                     className="max-w-[150px] max-h-[150px] rounded object-cover mb-2 cursor-pointer"
-                                                    onClick={() => openImageModal(`${BASE_URL}${report.image_path}`)}
-                                                    onError={() => console.error(`Error loading image: ${BASE_URL}${report.image_path}`)}
+                                                    onClick={() => openImageModal(`${BASE_URL}${report.image_path_1}`)}
+                                                    onError={() => console.error(`Error loading image 1: ${BASE_URL}${report.image_path_1}`)}
                                                 />
                                                 <button
-                                                    onClick={() => handleDownloadImage(`${BASE_URL}${report.image_path}`, report.id)}
+                                                    onClick={() => handleDownloadImage(`${BASE_URL}${report.image_path_1}`, report.id, 1)}
                                                     className="bg-azul-secundario text-blanco px-3 py-1 rounded hover:bg-azul-secundario/80 transition text-xs"
                                                 >
-                                                    Descargar Imagen
+                                                    Descargar Imagen 1
                                                 </button>
                                             </div>
                                         ) : (
-                                            'Sin imagen'
+                                            'Sin imagen 1'
+                                        )}
+                                    </td>
+                                    <td className="p-3 text-gris-oscuro text-sm">
+                                        {report.image_path_2 ? (
+                                            <div className="flex flex-col items-center">
+                                                <img
+                                                    src={`${BASE_URL}${report.image_path_2}`}
+                                                    alt="Reporte Imagen 2"
+                                                    className="max-w-[150px] max-h-[150px] rounded object-cover mb-2 cursor-pointer"
+                                                    onClick={() => openImageModal(`${BASE_URL}${report.image_path_2}`)}
+                                                    onError={() => console.error(`Error loading image 2: ${BASE_URL}${report.image_path_2}`)}
+                                                />
+                                                <button
+                                                    onClick={() => handleDownloadImage(`${BASE_URL}${report.image_path_2}`, report.id, 2)}
+                                                    className="bg-azul-secundario text-blanco px-3 py-1 rounded hover:bg-azul-secundario/80 transition text-xs"
+                                                >
+                                                    Descargar Imagen 2
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            'Sin imagen 2'
                                         )}
                                     </td>
                                     <td className="p-3 text-gris-oscuro text-sm">
