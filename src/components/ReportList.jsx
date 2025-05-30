@@ -6,6 +6,7 @@ const ReportList = ({ token }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [comment, setComment] = useState({});
+    const [selectedImage, setSelectedImage] = useState(null); // Estado para la imagen ampliada
     const BASE_URL = 'https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com';
 
     const fetchReports = useCallback(async () => {
@@ -75,10 +76,18 @@ const ReportList = ({ token }) => {
     const handleDownloadImage = (imageUrl) => {
         const link = document.createElement('a');
         link.href = `${imageUrl}?download=true`;
-        link.setAttribute('download', ''); // Esto activa la descarga
+        link.setAttribute('download', '');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    const openImageModal = (imageUrl) => {
+        setSelectedImage(imageUrl);
+    };
+
+    const closeImageModal = () => {
+        setSelectedImage(null);
     };
 
     if (loading) {
@@ -157,7 +166,8 @@ const ReportList = ({ token }) => {
                                                 <img
                                                     src={`${BASE_URL}${report.image_path}`}
                                                     alt="Reporte"
-                                                    className="max-w-[150px] max-h-[150px] rounded object-cover mb-2"
+                                                    className="max-w-[150px] max-h-[150px] rounded object-cover mb-2 cursor-pointer"
+                                                    onClick={() => openImageModal(`${BASE_URL}${report.image_path}`)}
                                                     onError={() => console.error(`Error loading image: ${BASE_URL}${report.image_path}`)}
                                                 />
                                                 <button
@@ -208,6 +218,25 @@ const ReportList = ({ token }) => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Modal para la imagen ampliada */}
+            {selectedImage && (
+                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+                    <div className="relative max-w-3xl max-h-[90vh] p-4">
+                        <img
+                            src={selectedImage}
+                            alt="Reporte Ampliado"
+                            className="max-w-full max-h-[80vh] object-contain rounded"
+                        />
+                        <button
+                            onClick={closeImageModal}
+                            className="absolute top-4 right-4 bg-rojo text-blanco px-4 py-2 rounded hover:bg-rojo/80 transition"
+                        >
+                            Cerrar
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
