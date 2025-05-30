@@ -72,6 +72,15 @@ const ReportList = ({ token }) => {
         setComment(prev => ({ ...prev, [reportId]: value }));
     };
 
+    const handleDownloadImage = (imageUrl) => {
+        const link = document.createElement('a');
+        link.href = `${imageUrl}?download=true`;
+        link.setAttribute('download', ''); // Esto activa la descarga
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     if (loading) {
         return <div className="text-center p-4">Cargando reportes...</div>;
     }
@@ -144,12 +153,20 @@ const ReportList = ({ token }) => {
                                     </td>
                                     <td className="p-3 text-gris-oscuro text-sm">
                                         {report.image_path ? (
-                                            <img
-                                                src={`${BASE_URL}${report.image_path}`}
-                                                alt="Reporte"
-                                                className="max-w-[150px] max-h-[150px] rounded object-cover"
-                                                onError={() => console.error(`Error loading image: ${BASE_URL}${report.image_path}`)}
-                                            />
+                                            <div className="flex flex-col items-center">
+                                                <img
+                                                    src={`${BASE_URL}${report.image_path}`}
+                                                    alt="Reporte"
+                                                    className="max-w-[150px] max-h-[150px] rounded object-cover mb-2"
+                                                    onError={() => console.error(`Error loading image: ${BASE_URL}${report.image_path}`)}
+                                                />
+                                                <button
+                                                    onClick={() => handleDownloadImage(`${BASE_URL}${report.image_path}`)}
+                                                    className="bg-azul-secundario text-blanco px-3 py-1 rounded hover:bg-azul-secundario/80 transition text-xs"
+                                                >
+                                                    Descargar Imagen
+                                                </button>
+                                            </div>
                                         ) : (
                                             'Sin imagen'
                                         )}
