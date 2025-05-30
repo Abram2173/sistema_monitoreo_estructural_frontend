@@ -6,13 +6,14 @@ const ReportList = ({ token }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [comment, setComment] = useState({});
+    const BASE_URL = 'https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com';
 
     const fetchReports = useCallback(async () => {
         try {
             setLoading(true);
             setError('');
             console.log('Obteniendo reportes con token:', token);
-            const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/reports', {
+            const response = await axios.get(`${BASE_URL}/api/reports`, {
                 headers: { Authorization: `Bearer ${token}` },
                 timeout: 10000,
             });
@@ -44,7 +45,7 @@ const ReportList = ({ token }) => {
             const commentText = comment[reportId] || '';
             console.log(`Enviando acción para reporte ${reportId}: ${status}, Comentario: ${commentText}`);
             const response = await axios.put(
-                `https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/reports/${reportId}`,
+                `${BASE_URL}/api/reports/${reportId}`,
                 {
                     status: status,
                     recommendations: commentText || null
@@ -113,6 +114,7 @@ const ReportList = ({ token }) => {
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Riesgo</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Estado</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Comentario del Inspector</th>
+                                <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Imagen</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Recomendaciones del Supervisor</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Acciones</th>
                             </tr>
@@ -139,6 +141,18 @@ const ReportList = ({ token }) => {
                                     </td>
                                     <td className="p-3 text-gris-oscuro text-sm">
                                         {report.comments || 'Sin comentario'}
+                                    </td>
+                                    <td className="p-3 text-gris-oscuro text-sm">
+                                        {report.image_path ? (
+                                            <img
+                                                src={`${BASE_URL}${report.image_path}`}
+                                                alt="Reporte"
+                                                className="max-w-[150px] max-h-[150px] rounded object-cover"
+                                                onError={() => console.error(`Error loading image: ${BASE_URL}${report.image_path}`)}
+                                            />
+                                        ) : (
+                                            'Sin imagen'
+                                        )}
                                     </td>
                                     <td className="p-3 text-gris-oscuro text-sm">
                                         {report.status === 'Pendiente' ? (
