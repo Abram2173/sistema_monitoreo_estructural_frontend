@@ -6,7 +6,7 @@ const ReportList = ({ token }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [comment, setComment] = useState({});
-    const [selectedImage, setSelectedImage] = useState(null); // Estado para la imagen ampliada
+    const [selectedImage, setSelectedImage] = useState(null);
     const BASE_URL = 'https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com';
 
     const fetchReports = useCallback(async () => {
@@ -73,13 +73,25 @@ const ReportList = ({ token }) => {
         setComment(prev => ({ ...prev, [reportId]: value }));
     };
 
-    const handleDownloadImage = (imageUrl) => {
-        const link = document.createElement('a');
-        link.href = `${imageUrl}?download=true`;
-        link.setAttribute('download', '');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const handleDownloadImage = async (imageUrl, reportId) => {
+        try {
+            const response = await fetch(`${imageUrl}?download=true`);
+            if (!response.ok) {
+                throw new Error('Error al descargar la imagen');
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `reporte_${reportId}.jpg`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Error al descargar la imagen:', err);
+            alert('No se pudo descargar la imagen');
+        }
     };
 
     const openImageModal = (imageUrl) => {
@@ -171,7 +183,7 @@ const ReportList = ({ token }) => {
                                                     onError={() => console.error(`Error loading image: ${BASE_URL}${report.image_path}`)}
                                                 />
                                                 <button
-                                                    onClick={() => handleDownloadImage(`${BASE_URL}${report.image_path}`)}
+                                                    onClick={() => handleDownloadImage(`${BASE_URL}${report.image_path}`, report.id)}
                                                     className="bg-azul-secundario text-blanco px-3 py-1 rounded hover:bg-azul-secundario/80 transition text-xs"
                                                 >
                                                     Descargar Imagen
