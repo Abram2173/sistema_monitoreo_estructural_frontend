@@ -14,11 +14,10 @@ const AdminDashboard = ({ token, onLogout, role }) => {
     const [selectedSupervisor, setSelectedSupervisor] = useState('');
     const [expandedReport, setExpandedReport] = useState(null);
     const [isDataFetched, setIsDataFetched] = useState(false);
+    const [currentView, setCurrentView] = useState('gestion');
 
     const fetchReports = useCallback(async (forceRefresh = false) => {
-        if (!forceRefresh && reports.length > 0) {
-            return;
-        }
+        if (!forceRefresh && reports.length > 0) return;
         try {
             const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/reports', {
                 headers: { Authorization: `Bearer ${token}` },
@@ -78,9 +77,7 @@ const AdminDashboard = ({ token, onLogout, role }) => {
     };
 
     const handleDeleteReport = async (reportId) => {
-        if (!window.confirm(`¿Estás seguro de que deseas eliminar el reporte ${reportId}?`)) {
-            return;
-        }
+        if (!window.confirm(`¿Estás seguro de que deseas eliminar el reporte ${reportId}?`)) return;
         try {
             const response = await axios.delete(
                 `https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/reports/${reportId}`,
@@ -98,7 +95,7 @@ const AdminDashboard = ({ token, onLogout, role }) => {
     const handleRefreshSupervisors = async () => {
         setLoading(true);
         setError('');
-        await fetchSupervisors(true); // Forzar actualización de supervisores
+        await fetchSupervisors(true);
         setLoading(false);
     };
 
@@ -138,7 +135,34 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                     </nav>
 
                     <div className="p-6">
-                        <div className="space-y-6">
+                        <div className="flex justify-center space-x-4 mb-6">
+                            <button
+                                onClick={() => setCurrentView('gestion')}
+                                className={`px-4 py-2 rounded font-medium transition ${
+                                    currentView === 'gestion' ? 'bg-azul text-blanco' : 'bg-gris-muyClaro text-gris-oscuro hover:bg-gris-medio'
+                                }`}
+                            >
+                                Gestión de Usuarios
+                            </button>
+                            <button
+                                onClick={() => setCurrentView('reportes')}
+                                className={`px-4 py-2 rounded font-medium transition ${
+                                    currentView === 'reportes' ? 'bg-azul text-blanco' : 'bg-gris-muyClaro text-gris-oscuro hover:bg-gris-medio'
+                                }`}
+                            >
+                                Visualizar Reportes
+                            </button>
+                            <button
+                                onClick={() => setCurrentView('asignacion')}
+                                className={`px-4 py-2 rounded font-medium transition ${
+                                    currentView === 'asignacion' ? 'bg-azul text-blanco' : 'bg-gris-muyClaro text-gris-oscuro hover:bg-gris-medio'
+                                }`}
+                            >
+                                Asignar Reportes
+                            </button>
+                        </div>
+
+                        {currentView === 'gestion' && (
                             <div className="bg-blanco p-6 rounded-lg shadow-md">
                                 <h2 className="text-xl font-bold text-gris-oscuro mb-4 flex items-center">
                                     Gestión de Usuarios
@@ -147,7 +171,9 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                                     <UserList token={token} />
                                 </Suspense>
                             </div>
+                        )}
 
+                        {currentView === 'reportes' && (
                             <div className="bg-blanco p-6 rounded-lg shadow-md">
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-xl font-bold text-gris-oscuro flex items-center">
@@ -246,7 +272,9 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                                     )
                                 )}
                             </div>
+                        )}
 
+                        {currentView === 'asignacion' && (
                             <div className="bg-blanco p-6 rounded-lg shadow-md">
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-xl font-bold text-gris-oscuro flex items-center">
@@ -366,7 +394,7 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                                     )
                                 )}
                             </div>
-                        </div>
+                        )}
                     </div>
                 </>
             )}
