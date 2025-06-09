@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import axios from 'axios';
 import { FaSignOutAlt, FaChevronDown, FaChevronUp, FaSyncAlt, FaTrash } from 'react-icons/fa';
+import { jsPDF } from 'jspdf';
 import logo from '../assets/logo.png';
 
 const UserList = React.lazy(() => import('./UserList'));
@@ -238,10 +239,38 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                                                                     </button>
                                                                     <button
                                                                         onClick={() => handleDeleteReport(report.id)}
-                                                                        className="bg-rojo text-blanco px-2 py-1 rounded hover:bg-rojo/80 text-sm font-medium transition"
+                                                                        className="bg-rojo text-blanco px-2 py-1 rounded hover:bg-rojo/80 text-sm font-medium transition mr-2"
                                                                     >
                                                                         <FaTrash className="inline mr-1" />
                                                                         Eliminar
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const doc = new jsPDF();
+                                                                            // Agregar logo
+                                                                            const img = new Image();
+                                                                            img.src = logo;
+                                                                            doc.addImage(img, 'PNG', 10, 10, 50, 20);
+                                                                            doc.text(`ID: ${report.id}`, 10, 40);
+                                                                            doc.text(`Inspector: ${report.inspector_name}`, 10, 50);
+                                                                            doc.text(`Ubicación: ${report.location}`, 10, 60);
+                                                                            doc.text(`Riesgo: ${report.risk_level}`, 10, 70);
+                                                                            doc.text(`Estado: ${report.status}`, 10, 80);
+                                                                            doc.text(`Supervisor: ${report.assigned_supervisor || 'No asignado'}`, 10, 90);
+                                                                            doc.text("Detalles:", 10, 100);
+                                                                            doc.text(`Descripción: ${report.description}`, 10, 110);
+                                                                            doc.text("Medidas:", 10, 120);
+                                                                            doc.text(`- Deformación: ${report.measurements.deformacion} mm`, 10, 130);
+                                                                            doc.text(`- Temperatura: ${report.measurements.temperatura} °C`, 10, 140);
+                                                                            doc.text(`- Vibración: ${report.measurements.vibracion} mm/s`, 10, 150);
+                                                                            doc.text(`Comentarios: ${report.comments || 'Sin comentarios'}`, 10, 160);
+                                                                            doc.text(`Recomendaciones: ${report.recommendations || 'Sin recomendaciones'}`, 10, 170);
+                                                                            doc.text(`Fecha: ${new Date(report.created_at).toLocaleString()}`, 10, 180);
+                                                                            doc.save(`reporte_${report.id}.pdf`);
+                                                                        }}
+                                                                        className="bg-red-400 text-white px-2 py-1 rounded hover:bg-red-500 text-sm font-medium transition"
+                                                                    >
+                                                                        Descargar PDF
                                                                     </button>
                                                                 </td>
                                                             </tr>

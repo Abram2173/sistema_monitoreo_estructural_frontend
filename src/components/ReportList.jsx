@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { jsPDF } from 'jspdf';
 
 const ReportList = ({ token }) => {
     const [reports, setReports] = useState([]);
@@ -243,6 +244,22 @@ const ReportList = ({ token }) => {
                                                 >
                                                     Rechazar
                                                 </button>
+                                                <button
+                                                    onClick={() => {
+                                                        const doc = new jsPDF();
+                                                        doc.text(`ID: ${report.id}`, 10, 10);
+                                                        doc.text(`Inspector: ${report.inspector_name}`, 10, 20);
+                                                        doc.text(`Ubicación: ${report.location}`, 10, 30);
+                                                        doc.text(`Riesgo: ${report.risk_level}`, 10, 40);
+                                                        doc.text(`Estado: ${report.status}`, 10, 50);
+                                                        doc.text(`Comentarios: ${report.comments || 'Sin comentario'}`, 10, 60);
+                                                        doc.text(`Recomendaciones: ${report.recommendations || 'Sin recomendaciones'}`, 10, 70);
+                                                        doc.save(`reporte_${report.id}.pdf`);
+                                                    }}
+                                                    className="bg-red-400 text-white px-3 py-1 rounded hover:bg-red-500 transition"
+                                                >
+                                                    Descargar PDF
+                                                </button>
                                             </div>
                                         ) : (
                                             <span className="text-gris-oscuro">Acción completada</span>
@@ -255,7 +272,6 @@ const ReportList = ({ token }) => {
                 </div>
             )}
 
-            {/* Modal para la imagen ampliada */}
             {selectedImage && (
                 <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
                     <div className="relative max-w-3xl max-h-[90vh] p-4">
