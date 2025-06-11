@@ -128,7 +128,7 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                         </div>
                         <button
                             onClick={onLogout}
-                            className="flex items-center bg-rojo text-blanco px-4 py-2 rounded hover:bg-rojo/80 transition"
+                            className="flex items-center bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition md:mt-0 mt-4"
                         >
                             <FaSignOutAlt className="mr-2" />
                             Cerrar Sesión
