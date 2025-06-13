@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
+import { signInWithCustomToken } from 'firebase/auth';
+import { auth } from '../firebase'; // Asegúrate de que firebase.js esté configurado
 
 const Login = ({ setToken }) => {
   const [email, setEmail] = useState('');
@@ -14,7 +16,7 @@ const Login = ({ setToken }) => {
     setError(''); // Limpiar errores anteriores
     try {
       const startTime = performance.now();
-      const response = await fetch('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/login', { // Usa la URL de Heroku
+      const response = await fetch('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -29,11 +31,17 @@ const Login = ({ setToken }) => {
 
       if (response.ok) {
         const data = await response.json();
-        const token = data.token; // Token personalizado del backend
-        sessionStorage.setItem('token', token);
-        console.log('Token obtenido del backend:', token);
+        const customToken = data.token; // Token personalizado del backend
+        console.log('Custom token recibido:', customToken);
+
+        // Usar el custom token para obtener un ID token de Firebase
+        const userCredential = await signInWithCustomToken(auth, customToken);
+        const idToken = await userCredential.user.getIdToken();
+        console.log('ID token obtenido de Firebase:', idToken);
+
+        sessionStorage.setItem('token', idToken);
         console.log('Token guardado en sessionStorage:', sessionStorage.getItem('token'));
-        setToken(token); // Pasar el token al estado padre si es necesario
+        setToken(idToken); // Pasar el ID token al estado padre si es necesario
         navigate('/dashboard');
       } else {
         const errorData = await response.json();

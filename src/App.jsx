@@ -13,7 +13,6 @@ const App = () => {
   const [role, setRole] = useState(sessionStorage.getItem('role') || '');
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(!!sessionStorage.getItem('token'));
-  const [lastAuthStateChange, setLastAuthStateChange] = useState(0);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -56,57 +55,13 @@ const App = () => {
   }, [navigate]);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      const now = Date.now();
-      if (now - lastAuthStateChange < 1000) {
-        console.log('Ignorando cambio de estado de autenticación repetido');
-        return;
-      }
-      setLastAuthStateChange(now);
-
-      if (user) {
-        console.log('Usuario autenticado en Firebase:', user.email);
-        try {
-          const idToken = await Promise.race([
-            auth.getIdToken(user, true),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000)),
-          ]);
-          console.log('Token renovado:', idToken);
-          sessionStorage.setItem('token', idToken);
-          setToken(idToken);
-          await fetchUserRole(idToken);
-        } catch (error) {
-          console.error("Error al renovar el token de Firebase:", error.message);
-          setError('Error al renovar la sesión. Por favor, inicia sesión nuevamente.');
-          setToken('');
-          setRole('');
-          sessionStorage.removeItem('token');
-          sessionStorage.removeItem('role');
-          setIsAuthenticated(false);
-          setLoading(false);
-          navigate('/login');
-        }
-      } else {
-        console.log('No hay usuario autenticado');
-        setToken('');
-        setRole('');
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('role');
-        setIsAuthenticated(false);
-        setLoading(false);
-        navigate('/login');
-      }
-    });
-
-    // Verificar token inicial desde sessionStorage
+    // Solo verificar el estado inicial desde sessionStorage
     if (token) {
       fetchUserRole(token);
     } else {
       setLoading(false);
     }
-
-    return () => unsubscribe();
-  }, [fetchUserRole, lastAuthStateChange, navigate, token]); // Excluir 'auth' del array
+  }, [fetchUserRole, token]);
 
   const handleLogout = async () => {
     try {
@@ -118,7 +73,7 @@ const App = () => {
     } catch (err) {
       console.error("Error al cerrar sesión en el backend:", err.response?.data || err.message);
     }
-    auth.signOut();
+    auth.signOut(); // Opcional, si aún usas Firebase para algo
     setToken('');
     setRole('');
     sessionStorage.removeItem('token');
