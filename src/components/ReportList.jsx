@@ -3,12 +3,13 @@ import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
-const ReportList = ({ token: propToken }) => {
+const ReportList = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [comment, setComment] = useState({});
   const [selectedImage, setSelectedImage] = useState(null);
+  const [token, setToken] = useState(null);
   const BASE_URL = 'https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com';
 
   const fetchReports = useCallback(async (token) => {
@@ -25,34 +26,31 @@ const ReportList = ({ token: propToken }) => {
       setLoading(false);
     } catch (err) {
       console.error('Error al obtener los reportes:', err.response?.data || err.message);
-      setError(err.response?.data?.detail || 'Error al cargar los reportes. Verifica tu conexión o token.');
+      setError(err.response?.data?.detail || 'Error al cargar los reportes. Verifica tu token.');
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (propToken) {
-      fetchReports(propToken);
-    } else {
-      const auth = getAuth();
-      onAuthStateChanged(auth, (user) => {
-        if (user) {
-          user.getIdToken(true).then((newToken) => {
-            fetchReports(newToken);
-          }).catch((err) => {
-            setError('Error al obtener el token: ' + err.message);
-            setLoading(false);
-          });
-        } else {
-          setError('No hay usuario autenticado. Inicia sesión.');
+    const auth = getAuth();
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        user.getIdToken().then((newToken) => {
+          setToken(newToken);
+          fetchReports(newToken);
+        }).catch((err) => {
+          setError('Error al obtener el token: ' + err.message);
           setLoading(false);
-        }
-      });
-    }
-  }, [propToken, fetchReports]);
+        });
+      } else {
+        setError('No hay usuario autenticado. Inicia sesión.');
+        setLoading(false);
+      }
+    });
+  }, [fetchReports]);
 
   const handleRefresh = () => {
-    if (propToken) fetchReports(propToken);
+    if (token) fetchReports(token);
   };
 
   const handleAction = async (reportId, status) => {
@@ -66,7 +64,7 @@ const ReportList = ({ token: propToken }) => {
           recommendations: commentText || null,
         },
         {
-          headers: { Authorization: `Bearer ${propToken}` },
+          headers: { Authorization: `Bearer ${token}` },
           timeout: 10000,
         }
       );
@@ -120,7 +118,7 @@ const ReportList = ({ token: propToken }) => {
         `${BASE_URL}/api/analyze_images`,
         { image_urls: [imageUrl] },
         {
-          headers: { Authorization: `Bearer ${propToken}`, 'Content-Type': 'application/json' },
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           timeout: 10000,
         }
       );
@@ -131,7 +129,7 @@ const ReportList = ({ token: propToken }) => {
       await axios.put(
         `${BASE_URL}/api/reports/${reportId}`,
         { evaluation, has_crack },
-        { headers: { Authorization: `Bearer ${propToken}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
     } catch (err) {
       console.error('Error al analizar imagen:', err.response?.data || err.message);
