@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -22,7 +23,7 @@ const App = () => {
       const startTime = performance.now();
       const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/me', {
         headers: { Authorization: `Bearer ${idToken}` },
-        timeout: 5000, // Reducido a 5 segundos para evitar timeouts prolongados
+        timeout: 5000,
       });
       const userRole = response.data.role;
       console.log('Respuesta de /api/auth/me:', response.data);
@@ -98,8 +99,15 @@ const App = () => {
       }
     });
 
+    // Verificar token inicial desde sessionStorage
+    if (token) {
+      fetchUserRole(token);
+    } else {
+      setLoading(false);
+    }
+
     return () => unsubscribe();
-  }, [fetchUserRole, lastAuthStateChange, navigate, auth]);
+  }, [fetchUserRole, lastAuthStateChange, navigate, auth, token]);
 
   const handleLogout = async () => {
     try {
@@ -164,6 +172,7 @@ const App = () => {
           {role === 'inspector' && (
             <Route path="/dashboard" element={<InspectorDashboard onLogout={handleLogout} role={role} />} />
           )}
+          <Route path="/login" element={<Login setToken={setToken} />} />
           <Route path="*" element={<Login setToken={setToken} />} />
         </Routes>
       </div>

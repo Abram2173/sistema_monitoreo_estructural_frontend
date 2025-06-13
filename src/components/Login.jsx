@@ -1,7 +1,6 @@
+// src/components/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase';
 import logo from '../assets/logo.png';
 
 const Login = ({ setToken }) => {
@@ -15,18 +14,34 @@ const Login = ({ setToken }) => {
     setError(''); // Limpiar errores anteriores
     try {
       const startTime = performance.now();
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const token = await userCredential.user.getIdToken();
+      const response = await fetch('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/login', { // Usa la URL de Heroku
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          username: email,
+          password: password,
+        }),
+      });
       const endTime = performance.now();
-      console.log(`Tiempo de autenticación con Firebase: ${(endTime - startTime) / 1000} segundos`);
-      console.log('Token obtenido de Firebase:', token); // Depuración
-      sessionStorage.setItem('token', token);
-      console.log('Token guardado en sessionStorage:', sessionStorage.getItem('token')); // Depuración
-      setToken(token);
-      navigate('/dashboard');
+      console.log(`Tiempo de autenticación con backend: ${(endTime - startTime) / 1000} segundos`);
+
+      if (response.ok) {
+        const data = await response.json();
+        const token = data.token; // Token personalizado del backend
+        sessionStorage.setItem('token', token);
+        console.log('Token obtenido del backend:', token);
+        console.log('Token guardado en sessionStorage:', sessionStorage.getItem('token'));
+        setToken(token); // Pasar el token al estado padre si es necesario
+        navigate('/dashboard');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Error al iniciar sesión');
+      }
     } catch (error) {
-      console.error("Error al iniciar sesión:", error.message); // Mostrar mensaje específico del error
-      setError(error.message || "Credenciales inválidas");
+      console.error('Error al iniciar sesión:', error.message);
+      setError(error.message || 'Credenciales inválidas');
     }
   };
 
@@ -45,7 +60,7 @@ const Login = ({ setToken }) => {
               </div>
               <h1 className="text-4xl text-center font-thin text-gray-800">Bienvenido de Vuelta</h1>
               <div className="w-full mt-4">
-                <form className="w-3/4 mx-auto" onSubmit={handleLogin}>
+                <form className="w-3/4 mx-auto" id="loginForm" onSubmit={handleLogin}>
                   {error && <p className="text-red-500 text-center mb-4">{error}</p>}
                   <div className="flex flex-col mt-4">
                     <input
