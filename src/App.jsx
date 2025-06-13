@@ -6,7 +6,7 @@ import Login from './components/Login';
 import SupervisorDashboard from './components/SupervisorDashboard';
 import InspectorDashboard from './components/InspectorDashboard';
 import AdminDashboard from './components/AdminDashboard';
-import { getAuth, onAuthStateChanged, getIdToken } from 'firebase/auth';
+import { auth } from './firebase'; // Importar la configuración de Firebase
 
 const App = () => {
   const [token, setToken] = useState(sessionStorage.getItem('token') || '');
@@ -16,7 +16,6 @@ const App = () => {
   const [lastAuthStateChange, setLastAuthStateChange] = useState(0);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const auth = getAuth();
 
   const fetchUserRole = useCallback(async (idToken) => {
     try {
@@ -57,7 +56,7 @@ const App = () => {
   }, [navigate]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       const now = Date.now();
       if (now - lastAuthStateChange < 1000) {
         console.log('Ignorando cambio de estado de autenticación repetido');
@@ -69,7 +68,7 @@ const App = () => {
         console.log('Usuario autenticado en Firebase:', user.email);
         try {
           const idToken = await Promise.race([
-            getIdToken(user, true),
+            auth.getIdToken(user, true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000)),
           ]);
           console.log('Token renovado:', idToken);
@@ -107,7 +106,7 @@ const App = () => {
     }
 
     return () => unsubscribe();
-  }, [fetchUserRole, lastAuthStateChange, navigate, auth, token]);
+  }, [fetchUserRole, lastAuthStateChange, navigate, token]); // Excluir 'auth' del array
 
   const handleLogout = async () => {
     try {
