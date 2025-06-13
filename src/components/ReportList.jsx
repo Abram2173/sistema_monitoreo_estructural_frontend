@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
-const ReportList = ({ token }) => {
+const ReportList = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [comment, setComment] = useState({});
   const [selectedImage, setSelectedImage] = useState(null);
-  const [evaluations, setEvaluations] = useState({});
+  const [token, setToken] = useState(null);
   const BASE_URL = 'https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com';
 
-  const fetchReports = useCallback(async () => {
+  const fetchReports = useCallback(async (token) => {
     try {
       setLoading(true);
       setError('');
@@ -22,33 +23,34 @@ const ReportList = ({ token }) => {
       });
       console.log('Reportes recibidos:', response.data);
       setReports(response.data);
-      // Inicializa evaluations con los datos existentes
-      const initialEvaluations = {};
-      response.data.forEach(report => {
-        if (report.evaluation) {
-          initialEvaluations[report.id] = report.evaluation;
-        }
-      });
-      setEvaluations(initialEvaluations);
       setLoading(false);
     } catch (err) {
       console.error('Error al obtener los reportes:', err.response?.data || err.message);
-      setError(err.response?.data?.detail || 'Error al cargar los reportes');
+      setError(err.response?.data?.detail || 'Error al cargar los reportes. Verifica tu token.');
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
-    if (token) {
-      fetchReports();
-    } else {
-      setError('No se proporcionó un token de autenticación');
-      setLoading(false);
-    }
-  }, [token, fetchReports]);
+    const auth = getAuth();
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        user.getIdToken().then((newToken) => {
+          setToken(newToken);
+          fetchReports(newToken);
+        }).catch((err) => {
+          setError('Error al obtener el token: ' + err.message);
+          setLoading(false);
+        });
+      } else {
+        setError('No hay usuario autenticado. Inicia sesión.');
+        setLoading(false);
+      }
+    });
+  }, [fetchReports]);
 
   const handleRefresh = () => {
-    fetchReports();
+    if (token) fetchReports(token);
   };
 
   const handleAction = async (reportId, status) => {
@@ -60,7 +62,6 @@ const ReportList = ({ token }) => {
         {
           status: status,
           recommendations: commentText || null,
-          evaluation: evaluations[reportId] || null, // Enviar el análisis de IA al actualizar
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -70,7 +71,7 @@ const ReportList = ({ token }) => {
       console.log('Reporte actualizado:', response.data);
       setReports(reports.map(report =>
         report.id === reportId
-          ? { ...report, status: status, recommendations: commentText || null, evaluation: evaluations[reportId] || null }
+          ? { ...report, status: status, recommendations: commentText || null }
           : report
       ));
       setComment(prev => ({ ...prev, [reportId]: '' }));
@@ -87,9 +88,7 @@ const ReportList = ({ token }) => {
   const handleDownloadImage = async (imageUrl, reportId, imageNumber) => {
     try {
       const response = await fetch(`${imageUrl}?download=true`);
-      if (!response.ok) {
-        throw new Error('Error al descargar la imagen');
-      }
+      if (!response.ok) throw new Error('Error al descargar la imagen');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -117,24 +116,24 @@ const ReportList = ({ token }) => {
     try {
       const response = await axios.post(
         `${BASE_URL}/api/analyze_images`,
-        { image_urls: [imageUrl] }, // Envía la URL de la imagen existente
+        { image_urls: [imageUrl] },
         {
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           timeout: 10000,
         }
       );
       const { evaluation, has_crack } = response.data;
-      setEvaluations(prev => ({ ...prev, [reportId]: evaluation }));
-      // Actualiza el reporte en el backend si es necesario
+      setReports(reports.map(report =>
+        report.id === reportId ? { ...report, evaluation, has_crack } : report
+      ));
       await axios.put(
         `${BASE_URL}/api/reports/${reportId}`,
         { evaluation, has_crack },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      fetchReports(); // Recarga los reportes para reflejar los cambios
     } catch (err) {
       console.error('Error al analizar imagen:', err.response?.data || err.message);
-      setEvaluations(prev => ({ ...prev, [reportId]: 'Error al analizar la imagen' }));
+      setError('Error al analizar la imagen: ' + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -290,7 +289,7 @@ const ReportList = ({ token }) => {
                             doc.text(`Estado: ${report.status}`, 10, 50);
                             doc.text(`Comentarios: ${report.comments || 'Sin comentario'}`, 10, 60);
                             doc.text(`Recomendaciones: ${report.recommendations || 'Sin recomendaciones'}`, 10, 70);
-                            doc.text(`Análisis IA: ${evaluations[report.id] || 'Sin análisis'}`, 10, 80);
+                            doc.text(`Análisis IA: ${report.evaluation || 'Sin análisis'}`, 10, 80);
                             doc.save(`reporte_${report.id}.pdf`);
                           }}
                           className="bg-red-400 text-white px-3 py-1 rounded hover:bg-red-500 transition"
@@ -308,15 +307,11 @@ const ReportList = ({ token }) => {
                         <p>{report.evaluation}</p>
                         <p>Riesgo: {report.has_crack ? 'Sí' : 'No'}</p>
                       </>
-                    ) : evaluations[report.id] ? (
-                      <>
-                        <p>{evaluations[report.id]}</p>
-                        <p>Riesgo: {evaluations[report.id].includes('detectado') ? 'Sí' : 'No'}</p>
-                      </>
                     ) : (
                       <button
-                        onClick={() => handleAnalyze(report.id, report.image_path_1)}
+                        onClick={() => handleAnalyze(report.id, report.image_path_1 || report.image_path_2)}
                         className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
+                        disabled={!report.image_path_1 && !report.image_path_2}
                       >
                         Analizar con IA
                       </button>
