@@ -3,6 +3,7 @@ import axios from 'axios';
 import { FaSignOutAlt, FaChevronDown, FaChevronUp, FaSyncAlt, FaTrash } from 'react-icons/fa';
 import { jsPDF } from 'jspdf';
 import logo from '../assets/logo.png'; // Asegúrate de tener este archivo en la ruta correcta
+import { getAuth } from 'firebase/auth';
 
 const UserList = React.lazy(() => import('./UserList')); // Componente para gestionar usuarios
 
@@ -109,7 +110,7 @@ const useUserStatuses = (token) => {
       setUsers(response.data);
     } catch (err) {
       setError(err.response?.data?.detail || 'Error al cargar los estados de usuarios');
-      console.error('Error en fetchUserStatuses:', err); // Depuración
+      console.error('Error en fetchUserStatuses:', err);
     }
   }, [token]);
 
@@ -117,7 +118,8 @@ const useUserStatuses = (token) => {
 };
 
 // Componente principal AdminDashboard
-const AdminDashboard = ({ token, onLogout, role }) => {
+const AdminDashboard = ({ onLogout, role }) => {
+  const [token, setToken] = useState(''); // Estado local para el token
   const { reports, setReports, fetchReports, handleDeleteReport, error: reportsError } = useReports(token);
   const { supervisors, fetchSupervisors, error: supervisorsError } = useSupervisors(token);
   const { selectedReport, setSelectedReport, selectedSupervisor, setSelectedSupervisor, handleAssignReport, error: assignError } = useAssignReport(token, reports, setReports);
@@ -126,18 +128,29 @@ const AdminDashboard = ({ token, onLogout, role }) => {
   const [expandedReport, setExpandedReport] = useState(null);
   const [isDataFetched, setIsDataFetched] = useState(false);
   const [currentView, setCurrentView] = useState('gestion');
+  const auth = getAuth();
 
-  // Cargar datos iniciales
+  // Cargar datos iniciales y refrescar token
   useEffect(() => {
     if (role === 'admin' && !isDataFetched) {
-      Promise.all([fetchReports(), fetchSupervisors(), fetchUserStatuses()])
-        .then(() => {
-          setLoading(false);
-          setIsDataFetched(true);
-        })
-        .catch(() => setLoading(false));
+      const refreshToken = async () => {
+        const user = auth.currentUser;
+        if (user) {
+          try {
+            const newToken = await user.getIdToken(true); // Forzar refresco del token
+            setToken(newToken); // Actualizar el token en el estado
+            await Promise.all([fetchReports(true), fetchSupervisors(), fetchUserStatuses()]);
+            setLoading(false);
+            setIsDataFetched(true);
+          } catch (err) {
+            console.error('Error al refrescar el token:', err);
+            setLoading(false);
+          }
+        }
+      };
+      refreshToken();
     }
-  }, [role, fetchReports, fetchSupervisors, fetchUserStatuses, isDataFetched]);
+  }, [role, fetchReports, fetchSupervisors, fetchUserStatuses, isDataFetched, auth]);
 
   // Actualizar supervisores
   const handleRefreshSupervisors = async () => {
