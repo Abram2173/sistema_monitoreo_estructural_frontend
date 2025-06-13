@@ -10,6 +10,7 @@ const ReportList = () => {
   const [comment, setComment] = useState({});
   const [selectedImage, setSelectedImage] = useState(null);
   const [token, setToken] = useState(null);
+  const [userStatuses, setUserStatuses] = useState({});
   const BASE_URL = 'https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com';
 
   const fetchReports = useCallback(async (token) => {
@@ -31,6 +32,21 @@ const ReportList = () => {
     }
   }, []);
 
+  const fetchUserStatuses = async (token) => {
+    try {
+      const response = await axios.get(`${BASE_URL}/api/users/status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const statuses = {};
+      response.data.forEach(user => {
+        statuses[user.uid] = user.status;
+      });
+      setUserStatuses(statuses);
+    } catch (err) {
+      console.error('Error al obtener estados de usuarios:', err.response?.data || err.message);
+    }
+  };
+
   useEffect(() => {
     const auth = getAuth();
     onAuthStateChanged(auth, (user) => {
@@ -38,6 +54,7 @@ const ReportList = () => {
         user.getIdToken().then((newToken) => {
           setToken(newToken);
           fetchReports(newToken);
+          fetchUserStatuses(newToken); // Obtener estados de usuarios
         }).catch((err) => {
           setError('Error al obtener el token: ' + err.message);
           setLoading(false);
@@ -50,7 +67,10 @@ const ReportList = () => {
   }, [fetchReports]);
 
   const handleRefresh = () => {
-    if (token) fetchReports(token);
+    if (token) {
+      fetchReports(token);
+      fetchUserStatuses(token);
+    }
   };
 
   const handleAction = async (reportId, status) => {
@@ -114,10 +134,9 @@ const ReportList = () => {
 
   const handleAnalyze = async (reportId, imageUrl) => {
     try {
-      console.log('Enviando análisis con imageUrl:', imageUrl); // Depuración
       const response = await axios.post(
         `${BASE_URL}/api/analyze_images`,
-        { image_urls: [imageUrl] || [] }, // Asegurar que siempre sea un array
+        { image_urls: [imageUrl] },
         {
           headers: { 
             Authorization: `Bearer ${token}`, 
@@ -140,6 +159,11 @@ const ReportList = () => {
       console.error('Error al analizar imagen:', err.response?.data || err.message);
       setError('Error al analizar la imagen: ' + (err.response?.data?.detail || err.message));
     }
+  };
+
+  const getStatusColor = (uid) => {
+    const status = userStatuses[uid] || 'inactive';
+    return status === 'active' ? 'green' : 'red';
   };
 
   if (loading) {
@@ -189,6 +213,7 @@ const ReportList = () => {
                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Recomendaciones del Supervisor</th>
                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Acciones</th>
                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Análisis IA</th>
+                <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Estatus</th>
               </tr>
             </thead>
             <tbody>
@@ -198,7 +223,9 @@ const ReportList = () => {
                   className={`border-b border-gris-borde ${index % 2 === 0 ? 'bg-blanco' : 'bg-gris-muyClaro'} hover:bg-gris-medio transition`}
                 >
                   <td className="p-3 text-gris-oscuro text-sm">{report.id}</td>
-                  <td className="p-3 text-gris-oscuro text-sm">{report.inspector_name}</td>
+                  <td className="p-3 text-gris-oscuro text-sm">
+                    {report.inspector_name} <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', backgroundColor: getStatusColor(report.inspector_id) }}></span>
+                  </td>
                   <td className="p-3 text-gris-oscuro text-sm">{report.location}</td>
                   <td className="p-3 text-gris-oscuro text-sm">{report.risk_level}</td>
                   <td className="p-3">
@@ -320,6 +347,12 @@ const ReportList = () => {
                       >
                         Analizar con IA
                       </button>
+                    )}
+                  </td>
+                  <td className="p-3">
+                    <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', backgroundColor: getStatusColor(report.inspector_id) }}></span>
+                    {report.assigned_supervisor && (
+                      <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', backgroundColor: getStatusColor(report.assigned_supervisor) }}></span>
                     )}
                   </td>
                 </tr>
