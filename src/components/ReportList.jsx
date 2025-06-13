@@ -114,9 +114,10 @@ const ReportList = () => {
 
   const handleAnalyze = async (reportId, imageUrl) => {
     try {
+      console.log('Enviando análisis con imageUrl:', imageUrl); // Depuración
       const response = await axios.post(
         `${BASE_URL}/api/analyze_images`,
-        { image_urls: [imageUrl] },
+        { image_urls: [imageUrl] || [] }, // Asegurar que siempre sea un array
         {
           headers: { 
             Authorization: `Bearer ${token}`, 
