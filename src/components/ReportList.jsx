@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import app from '../firebase'; // Asegúrate de tener firebase.js configurado
 
 const ReportList = () => {
   const [reports, setReports] = useState([]);
@@ -26,16 +27,16 @@ const ReportList = () => {
       setLoading(false);
     } catch (err) {
       console.error('Error al obtener los reportes:', err.response?.data || err.message);
-      setError(err.response?.data?.detail || 'Error al cargar los reportes. Verifica tu token.');
+      setError(err.response?.data?.detail || 'Error al cargar los reportes. Verifica tu token o el backend.');
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const auth = getAuth();
+    const auth = getAuth(app);
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        user.getIdToken().then((newToken) => {
+        user.getIdToken(true).then((newToken) => { // Forzar refresh del token
           setToken(newToken);
           fetchReports(newToken);
         }).catch((err) => {
@@ -114,6 +115,7 @@ const ReportList = () => {
 
   const handleAnalyze = async (reportId, imageUrl) => {
     try {
+      if (!token) throw new Error('No hay token de autenticación');
       const response = await axios.post(
         `${BASE_URL}/api/analyze_images`,
         { image_urls: [imageUrl] },
@@ -131,6 +133,7 @@ const ReportList = () => {
         { evaluation, has_crack },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      fetchReports(token); // Recarga los reportes para reflejar los cambios
     } catch (err) {
       console.error('Error al analizar imagen:', err.response?.data || err.message);
       setError('Error al analizar la imagen: ' + (err.response?.data?.detail || err.message));
