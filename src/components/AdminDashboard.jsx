@@ -109,6 +109,7 @@ const useUserStatuses = (token) => {
       setUsers(response.data);
     } catch (err) {
       setError(err.response?.data?.detail || 'Error al cargar los estados de usuarios');
+      console.error('Error en fetchUserStatuses:', err); // Depuración
     }
   }, [token]);
 
