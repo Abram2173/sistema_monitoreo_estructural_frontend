@@ -118,7 +118,10 @@ const ReportList = () => {
         `${BASE_URL}/api/analyze_images`,
         { image_urls: [imageUrl] },
         {
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          headers: { 
+            Authorization: `Bearer ${token}`, 
+            'Content-Type': 'application/json' 
+          },
           timeout: 10000,
         }
       );
@@ -131,6 +134,7 @@ const ReportList = () => {
         { evaluation, has_crack },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      fetchReports(token); // Recargar para sincronizar
     } catch (err) {
       console.error('Error al analizar imagen:', err.response?.data || err.message);
       setError('Error al analizar la imagen: ' + (err.response?.data?.detail || err.message));
