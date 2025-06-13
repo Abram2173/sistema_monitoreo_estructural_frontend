@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import { signInWithCustomToken } from 'firebase/auth';
-import { auth } from '../firebase'; // Asegúrate de que firebase.js esté configurado
+import { auth } from '../firebase';
 
 const Login = ({ setToken }) => {
   const [email, setEmail] = useState('');
@@ -31,18 +31,17 @@ const Login = ({ setToken }) => {
 
       if (response.ok) {
         const data = await response.json();
-        const customToken = data.token; // Token personalizado del backend
+        const customToken = data.token;
         console.log('Custom token recibido:', customToken);
 
-        // Usar el custom token para obtener un ID token de Firebase
+        // Autenticar con Firebase para obtener ID token
         const userCredential = await signInWithCustomToken(auth, customToken);
         const idToken = await userCredential.user.getIdToken();
         console.log('ID token obtenido de Firebase:', idToken);
 
         sessionStorage.setItem('token', idToken);
-        console.log('Token guardado en sessionStorage:', sessionStorage.getItem('token'));
-        setToken(idToken); // Pasar el ID token al estado padre si es necesario
-        navigate('/dashboard');
+        setToken(idToken);
+        navigate('/dashboard'); // Redirigir al dashboard
       } else {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Error al iniciar sesión');
@@ -60,11 +59,7 @@ const Login = ({ setToken }) => {
           <div className="flex flex-col w-full md:w-1/2 p-4">
             <div className="flex flex-col flex-1 justify-center mb-8">
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '10px' }}>
-                <img 
-                  src={logo} 
-                  alt="Logo Sistema de Monitoreo Estructural" 
-                  style={{ height: '200px', width: 'auto' }} 
-                />
+                <img src={logo} alt="Logo Sistema de Monitoreo Estructural" style={{ height: '200px', width: 'auto' }} />
               </div>
               <h1 className="text-4xl text-center font-thin text-gray-800">Bienvenido de Vuelta</h1>
               <div className="w-full mt-4">
@@ -97,11 +92,7 @@ const Login = ({ setToken }) => {
                   <div className="flex flex-col mt-8">
                     <button
                       type="submit"
-                      className="relative rounded-full bg-blue-500 px-4 py-2 font-mono font-bold 
-                      text-white transition-colors duration-300 ease-linear before:absolute 
-                      before:right-1/2 before:top-1/2 before:-z-[1] before:h-3/4 before:w-2/3 
-                      before:origin-bottom-left before:-translate-y-1/2 before:translate-x-1/2 before:animate-ping before:rounded-full 
-                      before:bg-blue-500 hover:bg-blue-700 hover:before:bg-blue-700"
+                      className="relative rounded-full bg-blue-500 px-4 py-2 font-mono font-bold text-white transition-colors duration-300 ease-linear before:absolute before:right-1/2 before:top-1/2 before:-z-[1] before:h-3/4 before:w-2/3 before:origin-bottom-left before:-translate-y-1/2 before:translate-x-1/2 before:animate-ping before:rounded-full before:bg-blue-500 hover:bg-blue-700 hover:before:bg-blue-700"
                     >
                       Iniciar Sesión
                     </button>

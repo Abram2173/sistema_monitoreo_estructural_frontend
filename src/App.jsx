@@ -6,7 +6,6 @@ import Login from './components/Login';
 import SupervisorDashboard from './components/SupervisorDashboard';
 import InspectorDashboard from './components/InspectorDashboard';
 import AdminDashboard from './components/AdminDashboard';
-import { auth } from './firebase'; // Importar la configuración de Firebase
 
 const App = () => {
   const [token, setToken] = useState(sessionStorage.getItem('token') || '');
@@ -55,7 +54,7 @@ const App = () => {
   }, [navigate]);
 
   useEffect(() => {
-    // Solo verificar el estado inicial desde sessionStorage
+    // Solo verificar el token inicial desde sessionStorage
     if (token) {
       fetchUserRole(token);
     } else {
@@ -73,7 +72,6 @@ const App = () => {
     } catch (err) {
       console.error("Error al cerrar sesión en el backend:", err.response?.data || err.message);
     }
-    auth.signOut(); // Opcional, si aún usas Firebase para algo
     setToken('');
     setRole('');
     sessionStorage.removeItem('token');
