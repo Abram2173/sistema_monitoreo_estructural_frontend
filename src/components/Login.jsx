@@ -1,9 +1,9 @@
 // src/components/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import logo from '../assets/logo.png';
-import { signInWithCustomToken } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
+import logo from '../assets/logo.png';
 
 const Login = ({ setToken }) => {
   const [email, setEmail] = useState('');
@@ -13,42 +13,17 @@ const Login = ({ setToken }) => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError(''); // Limpiar errores anteriores
+    setError('');
     try {
-      const startTime = performance.now();
-      const response = await fetch('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          username: email,
-          password: password,
-        }),
-      });
-      const endTime = performance.now();
-      console.log(`Tiempo de autenticación con backend: ${(endTime - startTime) / 1000} segundos`);
-
-      if (response.ok) {
-        const data = await response.json();
-        const customToken = data.token;
-        console.log('Custom token recibido:', customToken);
-
-        // Autenticar con Firebase para obtener ID token
-        const userCredential = await signInWithCustomToken(auth, customToken);
-        const idToken = await userCredential.user.getIdToken();
-        console.log('ID token obtenido de Firebase:', idToken);
-
-        sessionStorage.setItem('token', idToken);
-        setToken(idToken);
-        navigate('/dashboard'); // Redirigir al dashboard
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Error al iniciar sesión');
-      }
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const token = await userCredential.user.getIdToken();
+      console.log('Token obtenido de Firebase:', token);
+      sessionStorage.setItem('token', token);
+      setToken(token);
+      navigate('/dashboard');
     } catch (error) {
       console.error('Error al iniciar sesión:', error.message);
-      setError(error.message || 'Credenciales inválidas');
+      setError('Credenciales inválidas o usuario no encontrado');
     }
   };
 
@@ -63,14 +38,12 @@ const Login = ({ setToken }) => {
               </div>
               <h1 className="text-4xl text-center font-thin text-gray-800">Bienvenido de Vuelta</h1>
               <div className="w-full mt-4">
-                <form className="w-3/4 mx-auto" id="loginForm" onSubmit={handleLogin}>
+                <form className="w-3/4 mx-auto" onSubmit={handleLogin}>
                   {error && <p className="text-red-500 text-center mb-4">{error}</p>}
                   <div className="flex flex-col mt-4">
                     <input
-                      id="email"
                       type="email"
                       className="flex-grow h-8 px-2 border rounded border-gray-400 focus:outline-none focus:border-blue-500"
-                      name="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Correo"
@@ -79,10 +52,8 @@ const Login = ({ setToken }) => {
                   </div>
                   <div className="flex flex-col mt-4">
                     <input
-                      id="password"
                       type="password"
                       className="flex-grow h-8 px-2 rounded border border-gray-400 focus:outline-none focus:border-blue-500"
-                      name="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Contraseña"
@@ -92,7 +63,7 @@ const Login = ({ setToken }) => {
                   <div className="flex flex-col mt-8">
                     <button
                       type="submit"
-                      className="relative rounded-full bg-blue-500 px-4 py-2 font-mono font-bold text-white transition-colors duration-300 ease-linear before:absolute before:right-1/2 before:top-1/2 before:-z-[1] before:h-3/4 before:w-2/3 before:origin-bottom-left before:-translate-y-1/2 before:translate-x-1/2 before:animate-ping before:rounded-full before:bg-blue-500 hover:bg-blue-700 hover:before:bg-blue-700"
+                      className="relative rounded-full bg-blue-500 px-4 py-2 font-mono font-bold text-white transition-colors duration-300 ease-linear hover:bg-blue-700"
                     >
                       Iniciar Sesión
                     </button>
