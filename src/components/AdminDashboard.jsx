@@ -96,11 +96,31 @@ const useAssignReport = (token, reports, setReports) => {
   return { selectedReport, setSelectedReport, selectedSupervisor, setSelectedSupervisor, handleAssignReport, error };
 };
 
+// Hook para manejar el estatus de usuarios
+const useUserStatuses = (token) => {
+  const [users, setUsers] = useState([]);
+  const [error, setError] = useState('');
+
+  const fetchUserStatuses = useCallback(async () => {
+    try {
+      const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/users/status', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(response.data);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Error al cargar los estados de usuarios');
+    }
+  }, [token]);
+
+  return { users, fetchUserStatuses, error };
+};
+
 // Componente principal AdminDashboard
 const AdminDashboard = ({ token, onLogout, role }) => {
   const { reports, setReports, fetchReports, handleDeleteReport, error: reportsError } = useReports(token);
   const { supervisors, fetchSupervisors, error: supervisorsError } = useSupervisors(token);
   const { selectedReport, setSelectedReport, selectedSupervisor, setSelectedSupervisor, handleAssignReport, error: assignError } = useAssignReport(token, reports, setReports);
+  const { users, fetchUserStatuses, error: statusError } = useUserStatuses(token);
   const [loading, setLoading] = useState(true);
   const [expandedReport, setExpandedReport] = useState(null);
   const [isDataFetched, setIsDataFetched] = useState(false);
@@ -109,14 +129,14 @@ const AdminDashboard = ({ token, onLogout, role }) => {
   // Cargar datos iniciales
   useEffect(() => {
     if (role === 'admin' && !isDataFetched) {
-      Promise.all([fetchReports(), fetchSupervisors()])
+      Promise.all([fetchReports(), fetchSupervisors(), fetchUserStatuses()])
         .then(() => {
           setLoading(false);
           setIsDataFetched(true);
         })
         .catch(() => setLoading(false));
     }
-  }, [role, fetchReports, fetchSupervisors, isDataFetched]);
+  }, [role, fetchReports, fetchSupervisors, fetchUserStatuses, isDataFetched]);
 
   // Actualizar supervisores
   const handleRefreshSupervisors = async () => {
@@ -141,6 +161,10 @@ const AdminDashboard = ({ token, onLogout, role }) => {
       </div>
     );
   }
+
+  const getStatusColor = (status) => {
+    return status === 'active' ? 'green' : 'red';
+  };
 
   return (
     <div className="bg-gray-100 min-h-screen">
@@ -191,6 +215,14 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                 }`}
               >
                 Asignar Reportes
+              </button>
+              <button
+                onClick={() => setCurrentView('estatus')}
+                className={`px-4 py-2 rounded font-medium transition ${
+                  currentView === 'estatus' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Estatus de Usuarios
               </button>
             </div>
 
@@ -274,7 +306,7 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                                   </button>
                                   <button
                                     onClick={() => handleDeleteReport(report.id)}
-                                    className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 text-sm font-medium transition mr-2"
+                                    className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 text-sm font-medium transition"
                                     aria-label="Eliminar Reporte"
                                   >
                                     <FaTrash className="inline mr-1" />
@@ -465,6 +497,57 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                       )}
                     </div>
                   )
+                )}
+              </div>
+            )}
+
+            {/* Vista de Estatus de Usuarios */}
+            {currentView === 'estatus' && (
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                    Estatus de Usuarios
+                  </h2>
+                  <button
+                    onClick={fetchUserStatuses}
+                    className="flex items-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                    aria-label="Actualizar Estatus"
+                  >
+                    <FaSyncAlt className="mr-2" />
+                    Actualizar
+                  </button>
+                </div>
+                {statusError && <p className="text-red-500 mb-4">{statusError}</p>}
+                {users.length === 0 ? (
+                  <p className="text-gray-500">No hay usuarios disponibles.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse rounded-lg overflow-hidden shadow-md">
+                      <thead>
+                        <tr className="bg-gray-200 text-gray-700">
+                          <th className="p-3 text-left text-base font-bold border-b border-gray-300">UID</th>
+                          <th className="p-3 text-left text-base font-bold border-b border-gray-300">Email</th>
+                          <th className="p-3 text-left text-base font-bold border-b border-gray-300">Estatus</th>
+                          <th className="p-3 text-left text-base font-bold border-b border-gray-300">Última vez visto</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {users.map((user) => (
+                          <tr key={user.uid} className="border-b border-gray-300 hover:bg-gray-100 transition">
+                            <td className="p-3 text-gray-700 text-sm">{user.uid}</td>
+                            <td className="p-3 text-gray-700 text-sm">{user.email}</td>
+                            <td className="p-3">
+                              <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', backgroundColor: getStatusColor(user.status) }}></span>
+                              {user.status}
+                            </td>
+                            <td className="p-3 text-gray-700 text-sm">
+                              {user.last_seen ? new Date(user.last_seen.seconds * 1000).toLocaleString() : 'Nunca'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             )}
