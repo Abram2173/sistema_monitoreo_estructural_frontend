@@ -8,6 +8,7 @@ const ReportList = ({ token }) => {
     const [error, setError] = useState('');
     const [comment, setComment] = useState({});
     const [selectedImage, setSelectedImage] = useState(null);
+    const [evaluations, setEvaluations] = useState({});
     const BASE_URL = 'https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com';
 
     const fetchReports = useCallback(async () => {
@@ -103,6 +104,23 @@ const ReportList = ({ token }) => {
         setSelectedImage(null);
     };
 
+    const handleAnalyze = async (reportId, imageUrl) => {
+        try {
+            const response = await axios.post(
+                `${BASE_URL}/api/analyze_image_manual`,
+                { image: await fetch(imageUrl).then(res => res.blob()) },
+                {
+                    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
+                    timeout: 10000
+                }
+            );
+            setEvaluations(prev => ({ ...prev, [reportId]: response.data.evaluation }));
+        } catch (err) {
+            console.error('Error al analizar imagen:', err.response?.data || err.message);
+            setEvaluations(prev => ({ ...prev, [reportId]: 'Error al analizar la imagen' }));
+        }
+    };
+
     if (loading) {
         return <div className="text-center p-4">Cargando reportes...</div>;
     }
@@ -149,6 +167,7 @@ const ReportList = ({ token }) => {
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Imagen 2</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Recomendaciones del Supervisor</th>
                                 <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Acciones</th>
+                                <th className="p-3 text-left text-base font-bold border-b border-gris-borde">Análisis IA</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -264,6 +283,15 @@ const ReportList = ({ token }) => {
                                         ) : (
                                             <span className="text-gris-oscuro">Acción completada</span>
                                         )}
+                                    </td>
+                                    <td className="p-3">
+                                        <button
+                                            onClick={() => handleAnalyze(report.id, `${BASE_URL}${report.image_path_1}`)}
+                                            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
+                                        >
+                                            Analizar con IA
+                                        </button>
+                                        {evaluations[report.id] && <p style={{ color: 'blue', marginTop: '5px' }}>Evaluación IA: {evaluations[report.id]}</p>}
                                     </td>
                                 </tr>
                             ))}
