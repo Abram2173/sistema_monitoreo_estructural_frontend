@@ -96,17 +96,37 @@ const useAssignReport = (token, reports, setReports) => {
   return { selectedReport, setSelectedReport, selectedSupervisor, setSelectedSupervisor, handleAssignReport, error };
 };
 
+// Hook para manejar el estado de los usuarios
+const useUsersStatus = (token) => {
+  const [usersStatus, setUsersStatus] = useState([]);
+  const [error, setError] = useState('');
+
+  const fetchUsersStatus = useCallback(async () => {
+    try {
+      const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/users/status', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsersStatus(response.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al cargar el estado de los usuarios');
+    }
+  }, [token]);
+
+  return { usersStatus, fetchUsersStatus, error };
+};
+
 // Componente principal AdminDashboard
 const AdminDashboard = ({ token, onLogout, role }) => {
   const { reports, setReports, fetchReports, handleDeleteReport, error: reportsError } = useReports(token);
   const { supervisors, fetchSupervisors, error: supervisorsError } = useSupervisors(token);
   const { selectedReport, setSelectedReport, selectedSupervisor, setSelectedSupervisor, handleAssignReport, error: assignError } = useAssignReport(token, reports, setReports);
+  const { usersStatus, fetchUsersStatus, error: usersStatusError } = useUsersStatus(token);
   const [loading, setLoading] = useState(true);
   const [expandedReport, setExpandedReport] = useState(null);
   const [isDataFetched, setIsDataFetched] = useState(false);
   const [currentView, setCurrentView] = useState('gestion');
 
-  // Cargar datos iniciales
+  // Cargar datos iniciales para reportes y supervisores
   useEffect(() => {
     if (role === 'admin' && !isDataFetched) {
       Promise.all([fetchReports(), fetchSupervisors()])
@@ -117,6 +137,13 @@ const AdminDashboard = ({ token, onLogout, role }) => {
         .catch(() => setLoading(false));
     }
   }, [role, fetchReports, fetchSupervisors, isDataFetched]);
+
+  // Cargar estado de usuarios automáticamente al entrar en la vista
+  useEffect(() => {
+    if (currentView === 'usuarios') {
+      fetchUsersStatus();
+    }
+  }, [currentView, fetchUsersStatus]);
 
   // Actualizar supervisores
   const handleRefreshSupervisors = async () => {
@@ -191,6 +218,14 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                 }`}
               >
                 Asignar Reportes
+              </button>
+              <button
+                onClick={() => setCurrentView('usuarios')}
+                className={`px-4 py-2 rounded font-medium transition ${
+                  currentView === 'usuarios' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Estado de Usuarios
               </button>
             </div>
 
@@ -463,6 +498,62 @@ const AdminDashboard = ({ token, onLogout, role }) => {
                           </button>
                         </div>
                       )}
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+
+            {/* Vista de Estado de Usuarios */}
+            {currentView === 'usuarios' && (
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                    Estado de Usuarios
+                  </h2>
+                  <button
+                    onClick={fetchUsersStatus}
+                    className="flex items-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                    aria-label="Actualizar Estado de Usuarios"
+                  >
+                    <FaSyncAlt className="mr-2" />
+                    Actualizar
+                  </button>
+                </div>
+                {usersStatusError && <p className="text-red-500 mb-4">{usersStatusError}</p>}
+                {!usersStatusError && usersStatus.length === 0 ? (
+                  <p className="text-gray-500">No hay usuarios disponibles.</p>
+                ) : (
+                  !usersStatusError && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse rounded-lg overflow-hidden shadow-md">
+                        <thead>
+                          <tr className="bg-gray-200 text-gray-700">
+                            <th className="p-3 text-left text-base font-bold border-b border-gray-300">Usuario</th>
+                            <th className="p-3 text-left text-base font-bold border-b border-gray-300">Rol</th>
+                            <th className="p-3 text-left text-base font-bold border-b border-gray-300">Estado</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {usersStatus.map((user, index) => (
+                            <tr
+                              key={user.username}
+                              className={`border-b border-gray-300 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition`}
+                            >
+                              <td className="p-3 text-gray-700 text-sm">{user.username}</td>
+                              <td className="p-3 text-gray-700 text-sm">{user.role}</td>
+                              <td className="p-3">
+                                <span
+                                  className={`inline-block px-2 py-1 text-xs font-medium rounded-full capitalize
+                                    ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                                >
+                                  {user.is_active ? 'Activo' : 'Inactivo'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   )
                 )}
