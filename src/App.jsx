@@ -31,7 +31,7 @@ const App = () => {
       setRole(userRole);
       sessionStorage.setItem('role', userRole);
       setIsAuthenticated(true);
-      setError(''); // Limpiar cualquier error
+      setError('');
     } catch (err) {
       console.error("Error al obtener el rol del usuario:", err.response?.data || err.message);
       const status = err.response?.status;
