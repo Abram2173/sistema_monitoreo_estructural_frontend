@@ -5,7 +5,7 @@ import Login from './components/Login';
 import SupervisorDashboard from './components/SupervisorDashboard';
 import InspectorDashboard from './components/InspectorDashboard';
 import AdminDashboard from './components/AdminDashboard';
-import { getAuth, onAuthStateChanged, getIdToken } from 'firebase/auth'; // Añadido getIdToken
+import { getAuth, onAuthStateChanged, getIdToken } from 'firebase/auth';
 
 const App = () => {
   const [token, setToken] = useState(sessionStorage.getItem('token') || '');
@@ -34,7 +34,14 @@ const App = () => {
       setError(''); // Limpiar cualquier error
     } catch (err) {
       console.error("Error al obtener el rol del usuario:", err.response?.data || err.message);
-      setError(err.response?.data?.detail || 'Error al autenticar. Por favor, inicia sesión nuevamente.');
+      const status = err.response?.status;
+      if (status === 401) {
+        setError('Token no válido. Por favor, inicia sesión nuevamente.');
+      } else if (status === 403) {
+        setError('No tienes permisos suficientes. Contacta al administrador.');
+      } else {
+        setError('Error al autenticar. Por favor, intenta de nuevo.');
+      }
       setToken('');
       setRole('');
       sessionStorage.removeItem('token');
@@ -59,13 +66,13 @@ const App = () => {
         console.log('Usuario autenticado en Firebase:', user.email);
         try {
           const idToken = await Promise.race([
-            getIdToken(user, true), // Forzar refresco del token para obtener los claims actualizados
+            getIdToken(user, true),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000)),
           ]);
           console.log('Token renovado:', idToken);
           sessionStorage.setItem('token', idToken);
           setToken(idToken);
-          await fetchUserRole(idToken); // Obtener el rol después de refrescar el token
+          await fetchUserRole(idToken);
         } catch (error) {
           console.error("Error al renovar el token de Firebase:", error.message);
           setError('Error al renovar la sesión. Por favor, inicia sesión nuevamente.');
@@ -90,7 +97,7 @@ const App = () => {
     });
 
     return () => unsubscribe();
-  }, [fetchUserRole, lastAuthStateChange, navigate, auth]); // Añadido auth a las dependencias
+  }, [fetchUserRole, lastAuthStateChange, navigate, auth]);
 
   const handleLogout = async () => {
     try {
