@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaSignOutAlt, FaChevronDown, FaChevronUp, FaSyncAlt, FaTrash } from 'react-icons/fa';
-import { jsPDF } from 'jspdf';
 import logo from '../assets/logo.png';
 import UserList from './UserList'; // Asegúrate de que UserList.jsx esté importado
 
