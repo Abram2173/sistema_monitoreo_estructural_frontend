@@ -22,7 +22,7 @@ const App = () => {
       const startTime = performance.now();
       const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/me', {
         headers: { Authorization: `Bearer ${idToken}` },
-        timeout: 10000,
+        timeout: 5000, // Reducido a 5 segundos para evitar timeouts prolongados
       });
       const userRole = response.data.role;
       console.log('Respuesta de /api/auth/me:', response.data);
@@ -39,6 +39,8 @@ const App = () => {
         setError('Token no válido. Por favor, inicia sesión nuevamente.');
       } else if (status === 403) {
         setError('No tienes permisos suficientes. Contacta al administrador.');
+      } else if (err.code === 'ECONNABORTED') {
+        setError('Tiempo de espera agotado. Intenta de nuevo o verifica tu conexión.');
       } else {
         setError('Error al autenticar. Por favor, intenta de nuevo.');
       }
@@ -67,7 +69,7 @@ const App = () => {
         try {
           const idToken = await Promise.race([
             getIdToken(user, true),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000)),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000)),
           ]);
           console.log('Token renovado:', idToken);
           sessionStorage.setItem('token', idToken);
