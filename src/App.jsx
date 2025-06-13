@@ -46,7 +46,7 @@ const App = () => {
       setError('');
     } catch (err) {
       console.error("Error al obtener el rol del usuario:", err.response?.data || err.message);
-      setError(err.response?.data?.detail || 'Error al autenticar. Por favor, inicia sesión nuevamente.');
+      setError(err.response?.data?.detail || 'Error al autenticar. Por favor, inicia sesión nuevamente. Verifica el backend.');
       setToken('');
       setRole('');
       sessionStorage.removeItem('token');
