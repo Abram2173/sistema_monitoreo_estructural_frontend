@@ -16,7 +16,7 @@ const ReportList = ({ token }) => {
       setLoading(true);
       setError('');
       console.log('Fetch reports - Token recibido en ReportList:', token);
-      const username = sessionStorage.getItem('username') || 'supervisor3@gmail.com';
+      const username = sessionStorage.getItem('username') || 'supervisor4@gmail.com'; // Ajustado a supervisor4
       const response = await axios.get(`${BASE_URL}/api/reports`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { assigned_supervisor: username },
@@ -124,16 +124,16 @@ const ReportList = ({ token }) => {
           timeout: 10000,
         }
       );
-      const { evaluation, has_crack } = response.data;
+      const { evaluation, has_crack, recommendation } = response.data;
       setReports(reports.map(report =>
-        report.id === reportId ? { ...report, evaluation, has_crack } : report
+        report.id === reportId ? { ...report, evaluation, has_crack, recommendation } : report
       ));
       await axios.put(
         `${BASE_URL}/api/reports/${reportId}`,
-        { evaluation, has_crack },
+        { evaluation, has_crack, recommendation },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log('Análisis completado:', { evaluation, has_crack });
+      console.log('Análisis completado:', { evaluation, has_crack, recommendation });
       fetchReports(); // Refrescar la lista para actualizar la interfaz
     } catch (err) {
       console.error('Error al analizar imagen:', err.response?.data || err.message);
@@ -294,6 +294,7 @@ const ReportList = ({ token }) => {
                             doc.text(`Comentarios: ${report.comments || 'Sin comentario'}`, 10, 60);
                             doc.text(`Recomendaciones: ${report.recommendations || 'Sin recomendaciones'}`, 10, 70);
                             doc.text(`Análisis IA: ${report.evaluation || 'Sin análisis'}`, 10, 80);
+                            doc.text(`Recomendación IA: ${report.recommendation || 'Sin recomendación'}`, 10, 90);
                             doc.save(`reporte_${report.id}.pdf`);
                           }}
                           className="bg-red-400 text-white px-3 py-1 rounded hover:bg-red-500 transition"
@@ -310,6 +311,7 @@ const ReportList = ({ token }) => {
                       <>
                         <p>{report.evaluation}</p>
                         <p>Riesgo: {report.has_crack ? 'Sí' : 'No'}</p>
+                        <p>Recomendación: {report.recommendation || 'Sin recomendación'}</p>
                       </>
                     ) : (
                       <button
