@@ -15,7 +15,7 @@ const ReportList = ({ token }) => {
     try {
       setLoading(true);
       setError('');
-      console.log('Obteniendo reportes con token:', token);
+      console.log('Fetch reports - Token recibido en ReportList:', token);
       const username = sessionStorage.getItem('username') || 'supervisor3@gmail.com';
       const response = await axios.get(`${BASE_URL}/api/reports`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -75,7 +75,7 @@ const ReportList = ({ token }) => {
   const handleDownloadImage = async (imageUrl, reportId, imageNumber) => {
     try {
       const response = await fetch(`${imageUrl}?download=true`, {
-        headers: { Authorization: `Bearer ${token}` }, // Añadir token si es necesario
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error('Error al descargar la imagen');
       const blob = await response.blob();
@@ -103,8 +103,16 @@ const ReportList = ({ token }) => {
 
   const handleAnalyze = async (reportId, imageUrl) => {
     try {
+      if (!token) {
+        console.error('Token no disponible en handleAnalyze');
+        setError('Token no disponible. Por favor, inicia sesión de nuevo.');
+        return;
+      }
       const fullImageUrl = `${BASE_URL}${imageUrl}`;
-      console.log('Enviando solicitud de análisis con URL:', fullImageUrl, 'y token:', token);
+      console.log('Enviando solicitud de análisis con URL:', fullImageUrl, 'y encabezados:', {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      });
       const response = await axios.post(
         `${BASE_URL}/api/analyze_images`,
         { image_urls: [fullImageUrl] },
