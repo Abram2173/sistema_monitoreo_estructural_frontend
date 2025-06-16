@@ -9,6 +9,7 @@ const ReportList = ({ token }) => {
   const [error, setError] = useState('');
   const [comment, setComment] = useState({});
   const [selectedImage, setSelectedImage] = useState(null);
+  const [analysisModal, setAnalysisModal] = useState({ show: false, reportId: null, evaluation: '', recommendation: '', editedDescription: '' });
   const BASE_URL = 'https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com';
 
   const fetchReports = useCallback(async () => {
@@ -102,6 +103,36 @@ const ReportList = ({ token }) => {
     setSelectedImage(null);
   };
 
+  const openAnalysisModal = (reportId, evaluation, recommendation, description) => {
+    setAnalysisModal({ show: true, reportId, evaluation, recommendation, editedDescription: description });
+  };
+
+  const closeAnalysisModal = () => {
+    setAnalysisModal({ show: false, reportId: null, evaluation: '', recommendation: '', editedDescription: '' });
+  };
+
+  const handleDescriptionChange = (e) => {
+    setAnalysisModal(prev => ({ ...prev, editedDescription: e.target.value }));
+  };
+
+  const handleAcceptAnalysis = async (reportId, editedDescription) => {
+    try {
+      await axios.put(
+        `${BASE_URL}/api/reports/${reportId}`,
+        { recommendations: editedDescription },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setReports(reports.map(report =>
+        report.id === reportId ? { ...report, recommendations: editedDescription } : report
+      ));
+      fetchReports(); // Refrescar para consistencia
+      closeAnalysisModal();
+    } catch (err) {
+      console.error('Error al guardar la recomendación:', err.response?.data || err.message);
+      setError(`Error al guardar la recomendación: ${err.response?.data?.detail || err.message}`);
+    }
+  };
+
   const handleAnalyze = async (reportId, imageUrl) => {
     try {
       if (!token) {
@@ -125,20 +156,8 @@ const ReportList = ({ token }) => {
           timeout: 10000,
         }
       );
-      const { evaluation, has_crack, recommendation, description } = response.data;
-      // Actualizar el estado local inmediatamente
-      setReports(reports.map(report =>
-        report.id === reportId ? { ...report, evaluation, has_crack, recommendation, description } : report
-      ));
-      // Actualizar el reporte en el backend
-      await axios.put(
-        `${BASE_URL}/api/reports/${reportId}`,
-        { evaluation, has_crack, recommendation, description },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      console.log('Análisis completado:', { evaluation, has_crack, recommendation, description });
-      // Refrescar la lista para asegurar consistencia
-      fetchReports();
+      const { evaluation, recommendation, description } = response.data; // Eliminamos has_crack
+      openAnalysisModal(reportId, evaluation, recommendation, description);
     } catch (err) {
       console.error('Error al analizar imagen:', err.response?.data || err.message);
       setError(`Error al analizar la imagen: ${err.response?.data?.detail || err.message}`);
@@ -315,7 +334,6 @@ const ReportList = ({ token }) => {
                     {report.evaluation ? (
                       <>
                         <p>{report.evaluation}</p>
-                        <p>Riesgo: {report.has_crack ? 'Sí' : 'No'}</p>
                         <p>Recomendación: {report.recommendation || 'Sin recomendación'}</p>
                         <p>Descripción: {report.description || 'Sin descripción'}</p>
                       </>
@@ -349,6 +367,36 @@ const ReportList = ({ token }) => {
             >
               Cerrar
             </button>
+          </div>
+        </div>
+      )}
+      {analysisModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="relative bg-white p-6 rounded-lg max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Resultado del Análisis de IA</h3>
+            <p><strong>Evaluación:</strong> {analysisModal.evaluation}</p>
+            <p><strong>Recomendación:</strong> {analysisModal.recommendation}</p>
+            <textarea
+              value={analysisModal.editedDescription}
+              onChange={handleDescriptionChange}
+              placeholder="Edita la descripción si es necesario"
+              className="w-full p-2 border rounded mb-4"
+              rows="4"
+            />
+            <div className="mt-4 flex justify-end space-x-4">
+              <button
+                onClick={closeAnalysisModal}
+                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleAcceptAnalysis(analysisModal.reportId, analysisModal.editedDescription)}
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
       )}
