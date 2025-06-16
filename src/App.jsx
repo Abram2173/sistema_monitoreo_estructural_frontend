@@ -2,10 +2,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Login from './components/Login'; // Importar Login
-import AdminDashboard from './components/AdminDashboard'; // Importar AdminDashboard
-import SupervisorDashboard from './components/SupervisorDashboard'; // Importar SupervisorDashboard
-import InspectorDashboard from './components/InspectorDashboard'; // Importar InspectorDashboard
+import Login from './components/Login';
+import AdminDashboard from './components/AdminDashboard';
+import SupervisorDashboard from './components/SupervisorDashboard';
+import InspectorDashboard from './components/InspectorDashboard';
+import { auth, getIdToken } from './firebase'; // Importación corregida
 
 const App = () => {
   const [token, setToken] = useState(sessionStorage.getItem('token') || '');
@@ -18,7 +19,7 @@ const App = () => {
   // Interceptor para agregar el token a todas las solicitudes
   useEffect(() => {
     const interceptor = axios.interceptors.request.use(
-      config => {
+      async config => {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -33,6 +34,7 @@ const App = () => {
     try {
       const startTime = performance.now();
       const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/me', {
+        headers: { Authorization: `Bearer ${idToken}` },
         timeout: 10000,
       });
       const userRole = response.data.role;
@@ -45,6 +47,16 @@ const App = () => {
       setError('');
     } catch (err) {
       console.error("Error al obtener el rol del usuario:", err.response?.data || err.message);
+      if (err.response?.status === 401) {
+        const user = auth.currentUser;
+        if (user) {
+          const newToken = await getIdToken(user, true);
+          sessionStorage.setItem('token', newToken);
+          setToken(newToken);
+          await fetchUserRole(newToken); // Reintentar con el nuevo token
+          return;
+        }
+      }
       setError(err.response?.data?.detail || 'Error al autenticar. Por favor, inicia sesión nuevamente.');
       setToken('');
       setRole('');
@@ -68,7 +80,9 @@ const App = () => {
   const handleLogout = async () => {
     try {
       if (token) {
-        await axios.post('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/logout');
+        await axios.post('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/logout', {}, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
     } catch (err) {
       console.error("Error al cerrar sesión en el backend:", err.response?.data || err.message);
