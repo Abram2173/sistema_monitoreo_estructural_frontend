@@ -6,7 +6,7 @@ import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
 import SupervisorDashboard from './components/SupervisorDashboard';
 import InspectorDashboard from './components/InspectorDashboard';
-import { auth, getIdToken } from './firebase'; // Importación corregida
+import { auth, getIdToken } from './firebase';
 
 const App = () => {
   const [token, setToken] = useState(sessionStorage.getItem('token') || '');
@@ -31,41 +31,52 @@ const App = () => {
   }, [token]);
 
   const fetchUserRole = useCallback(async (idToken) => {
-    try {
-      const startTime = performance.now();
-      const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/me', {
-        headers: { Authorization: `Bearer ${idToken}` },
-        timeout: 10000,
-      });
-      const userRole = response.data.role;
-      console.log('Respuesta de /api/auth/me:', response.data);
-      console.log('Rol obtenido:', userRole);
-      console.log(`Tiempo para obtener el rol: ${(performance.now() - startTime) / 1000} segundos`);
-      setRole(userRole);
-      sessionStorage.setItem('role', userRole);
-      setIsAuthenticated(true);
-      setError('');
-    } catch (err) {
-      console.error("Error al obtener el rol del usuario:", err.response?.data || err.message);
-      if (err.response?.status === 401) {
-        const user = auth.currentUser;
-        if (user) {
-          const newToken = await getIdToken(user, true);
-          sessionStorage.setItem('token', newToken);
-          setToken(newToken);
-          await fetchUserRole(newToken); // Reintentar con el nuevo token
-          return;
+    let attempts = 0;
+    const maxAttempts = 3;
+    while (attempts < maxAttempts) {
+      try {
+        const startTime = performance.now();
+        const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/auth/me', {
+          headers: { Authorization: `Bearer ${idToken}` },
+          timeout: 15000, // Aumentar timeout a 15 segundos
+        });
+        const userRole = response.data.role;
+        console.log('Respuesta de /api/auth/me:', response.data);
+        console.log('Rol obtenido:', userRole);
+        console.log(`Tiempo para obtener el rol: ${(performance.now() - startTime) / 1000} segundos`);
+        setRole(userRole);
+        sessionStorage.setItem('role', userRole);
+        setIsAuthenticated(true);
+        setError('');
+        break;
+      } catch (err) {
+        attempts++;
+        console.error(`Intento ${attempts} - Error al obtener el rol del usuario:`, err.response?.data || err.message);
+        if (err.code === 'ECONNABORTED' && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Esperar 2 segundos antes de reintentar
+          continue;
         }
+        if (err.response?.status === 401) {
+          const user = auth.currentUser;
+          if (user) {
+            const newToken = await getIdToken(user, true);
+            sessionStorage.setItem('token', newToken);
+            setToken(newToken);
+            await fetchUserRole(newToken); // Reintentar con el nuevo token
+            return;
+          }
+        }
+        setError(err.response?.data?.detail || 'Error al autenticar. Por favor, inicia sesión nuevamente.');
+        setToken('');
+        setRole('');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('role');
+        setIsAuthenticated(false);
+        navigate('/login');
+        break;
+      } finally {
+        setLoading(false);
       }
-      setError(err.response?.data?.detail || 'Error al autenticar. Por favor, inicia sesión nuevamente.');
-      setToken('');
-      setRole('');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('role');
-      setIsAuthenticated(false);
-      navigate('/login');
-    } finally {
-      setLoading(false);
     }
   }, [navigate]);
 
