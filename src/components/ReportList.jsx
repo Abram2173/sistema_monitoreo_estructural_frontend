@@ -134,6 +134,7 @@ const ReportList = ({ token }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       console.log('Análisis completado:', { evaluation, has_crack });
+      fetchReports(); // Refrescar la lista para actualizar la interfaz
     } catch (err) {
       console.error('Error al analizar imagen:', err.response?.data || err.message);
       setError(`Error al analizar la imagen: ${err.response?.data?.detail || err.message}`);
