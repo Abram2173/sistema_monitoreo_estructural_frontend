@@ -74,7 +74,9 @@ const ReportList = ({ token }) => {
 
   const handleDownloadImage = async (imageUrl, reportId, imageNumber) => {
     try {
-      const response = await fetch(`${imageUrl}?download=true`);
+      const response = await fetch(`${imageUrl}?download=true`, {
+        headers: { Authorization: `Bearer ${token}` }, // Añadir token si es necesario
+      });
       if (!response.ok) throw new Error('Error al descargar la imagen');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -101,11 +103,11 @@ const ReportList = ({ token }) => {
 
   const handleAnalyze = async (reportId, imageUrl) => {
     try {
-      const fullImageUrl = `${BASE_URL}${imageUrl}`; // Asegurar URL absoluta
-      console.log('Enviando solicitud de análisis con URL:', fullImageUrl);
+      const fullImageUrl = `${BASE_URL}${imageUrl}`;
+      console.log('Enviando solicitud de análisis con URL:', fullImageUrl, 'y token:', token);
       const response = await axios.post(
         `${BASE_URL}/api/analyze_images`,
-        { image_urls: [fullImageUrl] }, // Enviar como JSON
+        { image_urls: [fullImageUrl] },
         {
           headers: { 
             Authorization: `Bearer ${token}`, 
