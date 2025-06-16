@@ -126,16 +126,19 @@ const ReportList = ({ token }) => {
         }
       );
       const { evaluation, has_crack, recommendation, description } = response.data;
+      // Actualizar el estado local inmediatamente
       setReports(reports.map(report =>
         report.id === reportId ? { ...report, evaluation, has_crack, recommendation, description } : report
       ));
+      // Actualizar el reporte en el backend
       await axios.put(
         `${BASE_URL}/api/reports/${reportId}`,
         { evaluation, has_crack, recommendation, description },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       console.log('Análisis completado:', { evaluation, has_crack, recommendation, description });
-      fetchReports(); // Refrescar la lista después del análisis
+      // Refrescar la lista para asegurar consistencia
+      fetchReports();
     } catch (err) {
       console.error('Error al analizar imagen:', err.response?.data || err.message);
       setError(`Error al analizar la imagen: ${err.response?.data?.detail || err.message}`);
@@ -353,4 +356,4 @@ const ReportList = ({ token }) => {
   );
 };
 
-export default ReportList; 
+export default ReportList;
