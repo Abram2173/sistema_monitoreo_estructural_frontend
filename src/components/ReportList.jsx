@@ -133,6 +133,10 @@ const ReportList = ({ token }) => {
     }
   };
 
+  const handleRejectAnalysis = () => {
+    closeAnalysisModal(); // Cerrar sin guardar
+  };
+
   const handleAnalyze = async (reportId, imageUrl) => {
     try {
       if (!token) {
@@ -385,16 +389,16 @@ const ReportList = ({ token }) => {
             />
             <div className="mt-4 flex justify-end space-x-4">
               <button
-                onClick={closeAnalysisModal}
-                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition"
+                onClick={handleRejectAnalysis}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
               >
-                Cancelar
+                Rechazar
               </button>
               <button
                 onClick={() => handleAcceptAnalysis(analysisModal.reportId, analysisModal.editedDescription)}
                 className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
               >
-                OK
+                Aceptar
               </button>
             </div>
           </div>
