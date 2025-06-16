@@ -62,6 +62,7 @@ const ReportList = ({ token }) => {
           : report
       ));
       setComment(prev => ({ ...prev, [reportId]: '' }));
+      fetchReports(); // Refrescar después de la acción
     } catch (err) {
       console.error('Error al actualizar el reporte:', err.response?.data || err.message);
       setError(err.response?.data?.detail || 'Error al actualizar el reporte');
@@ -134,7 +135,7 @@ const ReportList = ({ token }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       console.log('Análisis completado:', { evaluation, has_crack, recommendation });
-      fetchReports(); // Refrescar la lista para actualizar la interfaz
+      fetchReports(); // Refrescar la lista después del análisis
     } catch (err) {
       console.error('Error al analizar imagen:', err.response?.data || err.message);
       setError(`Error al analizar la imagen: ${err.response?.data?.detail || err.message}`);
