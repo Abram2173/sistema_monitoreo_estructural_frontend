@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Eliminamos Suspense
+// src/components/AdminDashboard.jsx
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { FaSignOutAlt, FaChevronDown, FaChevronUp, FaSyncAlt, FaTrash } from 'react-icons/fa';
 import { jsPDF } from 'jspdf';
 import logo from '../assets/logo.png';
-import UserList from './UserList'; // Importación estática
+import UserList from './UserList';
 
 const useReports = (token) => {
     const [reports, setReports] = useState(JSON.parse(sessionStorage.getItem('admin_reports')) || []);
