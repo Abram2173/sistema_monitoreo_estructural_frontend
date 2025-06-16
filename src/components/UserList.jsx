@@ -26,10 +26,10 @@ const UserList = ({ token }) => {
         setUsers(response.data);
       } catch (err) {
         console.error('Error fetching users:', err.response?.data || err.message); // Depuración
-        setError(err.response?.data?.detail || 'Error al cargar los usuarios. Verifica tu token o permisos.');
+        setError(err.response?.data?.detail || 'Error al cargar los usuarios. Verifica tu token o permisos como administrador.');
       }
     };
-    fetchUsers();
+    if (token) fetchUsers(); // Asegurar que el token exista
   }, [token]);
 
   const handleInputChange = (e) => {
