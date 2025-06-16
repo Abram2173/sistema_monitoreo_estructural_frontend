@@ -17,7 +17,7 @@ const UserList = ({ token }) => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        console.log('Fetching users with token:', token); // Depuración
+        console.log('Fetching users with token:', token ? token.substring(0, 20) + '...' : 'No token'); // Depuración parcial
         const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/admin/users', {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 10000,
@@ -25,7 +25,7 @@ const UserList = ({ token }) => {
         console.log('Users fetched:', response.data); // Depuración
         setUsers(response.data);
       } catch (err) {
-        console.error('Error fetching users:', err.response?.data || err.message); // Depuración
+        console.error('Error fetching users:', err.response?.data || err.message, 'Status:', err.response?.status); // Depuración
         setError(err.response?.data?.detail || 'Error al cargar los usuarios. Verifica tu token o permisos como administrador.');
       }
     };
@@ -70,7 +70,7 @@ const UserList = ({ token }) => {
         setShowForm(false);
         alert('Usuario creado exitosamente');
       } catch (err) {
-        console.error('Error creating user:', err.response?.data || err.message); // Depuración
+        console.error('Error creating user:', err.response?.data || err.message, 'Status:', err.response?.status); // Depuración
         setError(err.response?.data?.detail || 'Error al crear el usuario');
       }
     }
@@ -90,7 +90,7 @@ const UserList = ({ token }) => {
         setUsers(users.filter(user => user.username !== username));
         alert(`Usuario ${username} eliminado exitosamente`);
       } catch (err) {
-        console.error('Error deleting user:', err.response?.data || err.message); // Depuración
+        console.error('Error deleting user:', err.response?.data || err.message, 'Status:', err.response?.status); // Depuración
         setError(err.response?.data?.detail || 'Error al eliminar el usuario');
       }
     }
