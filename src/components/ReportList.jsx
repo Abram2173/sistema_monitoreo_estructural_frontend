@@ -16,7 +16,7 @@ const ReportList = ({ token }) => {
       setLoading(true);
       setError('');
       console.log('Obteniendo reportes con token:', token);
-      const username = sessionStorage.getItem('username') || 'supervisor3@gmail.com'; // Obtener username de sessionStorage
+      const username = sessionStorage.getItem('username') || 'supervisor3@gmail.com';
       const response = await axios.get(`${BASE_URL}/api/reports`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { assigned_supervisor: username },
@@ -101,11 +101,16 @@ const ReportList = ({ token }) => {
 
   const handleAnalyze = async (reportId, imageUrl) => {
     try {
+      const fullImageUrl = `${BASE_URL}${imageUrl}`; // Asegurar URL absoluta
+      console.log('Enviando solicitud de análisis con URL:', fullImageUrl);
       const response = await axios.post(
         `${BASE_URL}/api/analyze_images`,
-        { image_urls: [imageUrl] },
+        { image_urls: [fullImageUrl] }, // Enviar como JSON
         {
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          headers: { 
+            Authorization: `Bearer ${token}`, 
+            'Content-Type': 'application/json' 
+          },
           timeout: 10000,
         }
       );
@@ -118,9 +123,10 @@ const ReportList = ({ token }) => {
         { evaluation, has_crack },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      console.log('Análisis completado:', { evaluation, has_crack });
     } catch (err) {
       console.error('Error al analizar imagen:', err.response?.data || err.message);
-      setError('Error al analizar la imagen: ' + (err.response?.data?.detail || err.message));
+      setError(`Error al analizar la imagen: ${err.response?.data?.detail || err.message}`);
     }
   };
 
