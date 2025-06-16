@@ -117,6 +117,7 @@ const ReportList = ({ token }) => {
 
   const handleAcceptAnalysis = async (reportId, editedDescription) => {
     try {
+      // Solo actualizar las recomendaciones, no el estado
       await axios.put(
         `${BASE_URL}/api/reports/${reportId}`,
         { recommendations: editedDescription },
