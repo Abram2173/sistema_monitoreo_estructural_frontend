@@ -16,8 +16,8 @@ const UserList = ({ token }) => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-const response = await axios.get('https://sistema-monitoreo-backend.herokuapp.com/api/admin/users', {
-            headers: { Authorization: `Bearer ${token}` },
+        const response = await axios.get('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/admin/users', {
+          headers: { Authorization: `Bearer ${token}` },
         });
         setUsers(response.data);
       } catch (err) {
@@ -35,7 +35,7 @@ const response = await axios.get('https://sistema-monitoreo-backend.herokuapp.co
   const handleCreateUser = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('https://sistema-monitoreo-backend.herokuapp.com/api/admin/users', newUser, {
+      const response = await axios.post('https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/admin/users', newUser, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers([...users, response.data]);
@@ -53,13 +53,9 @@ const response = await axios.get('https://sistema-monitoreo-backend.herokuapp.co
   };
 
   const handleDelete = async (username) => {
-    if (!username) {
-      setError('No se seleccionó un usuario válido para eliminar');
-      return;
-    }
     if (window.confirm(`¿Estás seguro de que quieres eliminar al usuario ${username}?`)) {
       try {
-        await axios.delete(`https://sistema-monitoreo-backend.herokuapp.com/api/admin/users/${username}`, {
+        await axios.delete(`https://sistema-monitoreo-backend-2d6d5d68221a.herokuapp.com/api/admin/users/${username}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUsers(users.filter(user => user.username !== username));
