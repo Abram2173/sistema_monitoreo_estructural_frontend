@@ -16,8 +16,8 @@ const UserList = ({ token }) => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get('https://sistema-monitoreo-backend.herokuapp.com/api/admin/users', {
-          headers: { Authorization: `Bearer ${token}` },
+const response = await axios.get('https://sistema-monitoreo-backend.herokuapp.com/api/admin/users', {
+            headers: { Authorization: `Bearer ${token}` },
         });
         setUsers(response.data);
       } catch (err) {
