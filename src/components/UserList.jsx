@@ -220,5 +220,5 @@ const UserList = ({ token }) => {
     </div>
   );
 };
-
+ 
 export default UserList;
